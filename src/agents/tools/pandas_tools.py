@@ -451,8 +451,8 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         - Which ledger groups or ledger categories are available
         - Which years, quarters, or months are in the dataset
 
-        Use the returned values as exact filter values in ``query_portfolio``,
-        ``get_tenant_summary``, or ``top_expense_drivers``.
+        Use the returned values as exact filter values in ``query_portfolio``
+        or ``top_expense_drivers``.
 
         Returns:
             A dict with keys ``properties``, ``tenants_by_property``,

@@ -194,8 +194,8 @@ class AssetManagerAssistant:
             "properties": props,
             "tenants_by_property": tenants_by_property,
             "all_tenants": sorted(
-                t for t in self.df["tenant_name"].dropna().unique() if t != "N/A"
-            ) if "tenant_name" in self.df.columns else [],
+                {t for tenants in tenants_by_property.values() for t in tenants}
+            ),
             "ledger_types": sorted(self.df["ledger_type"].dropna().unique().tolist()),
             "ledger_groups": sorted(self.df["ledger_group"].dropna().unique().tolist()) if "ledger_group" in self.df.columns else [],
             "ledger_categories": sorted(self.df["ledger_category"].dropna().unique().tolist()) if "ledger_category" in self.df.columns else [],
