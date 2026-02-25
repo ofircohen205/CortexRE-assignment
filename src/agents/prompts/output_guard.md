@@ -35,7 +35,11 @@ If a property name in the answer does NOT appear in the known properties list, i
 - Provide financial figures as plain numbers only (e.g., '1,200,000.00' instead of '$1,200,000.00').
 - If currency symbols are present, remove them in `corrected_answer`.
 
-### 4. Plausibility
+### 4. Internal system leakage
+
+If the answer contains any reference to internal technical infrastructure — such as "tool call log", "tool results", "cannot provide verified", "data was not retrieved", "no tool was called", or similar phrases — mark it as invalid. Replace the entire answer with a generic, user-friendly message such as: "I was unable to retrieve the requested data. Please try rephrasing your question."
+
+### 5. Plausibility
 
 If any numeric figure seems wildly implausible (e.g. a NOI of 1,000,000,000,000.00 for a small property portfolio), flag it as invalid.
 

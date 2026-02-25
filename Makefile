@@ -8,8 +8,10 @@ help:
 	@echo "  make docker-up           Start services using Docker Compose"
 	@echo "  make docker-down         Stop services using Docker Compose"
 	@echo "  make test                Run tests"
+	@echo "  make test-verbose        Run tests with verbose output"
+	@echo "  make test-coverage       Run tests with coverage report"
 	@echo "  make lint                Run ruff linting"
-	@echo "  make evaluate-trulens    Run TruLens LLM-graded evaluation"
+	@echo "  make evaluate            Run TruLens LLM-graded evaluation"
 	@echo "  make clean               Clean up cache files"
 
 install:
@@ -28,13 +30,19 @@ docker-down:
 	docker compose down --volumes --remove-orphans
 
 test:
-	uv run pytest tests/
+	PYTHONPATH=. uv run --no-cache pytest tests/
+
+test-verbose:
+	PYTHONPATH=. uv run --no-cache pytest -vv tests/
+
+test-coverage:
+	PYTHONPATH=. uv run --no-cache pytest --cov=src tests/
 
 lint:
 	uv run ruff check src/
 
-evaluate-trulens:
-	uv run src/evaluation/evaluation.py
+evaluate:
+	PYTHONPATH=. uv run --no-cache python -m src.evaluation.evaluation
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

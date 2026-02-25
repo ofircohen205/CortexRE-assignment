@@ -81,6 +81,15 @@ All pandas operations are wrapped with LangChain's `@tool` decorator and bundled
 - **Closure over `df`**: DataFrame is captured once at startup; tool arguments remain JSON-serialisable.
 - **`ToolError`**: Converts data-quality issues (missing property, unknown year) into user-friendly messages.
 
+### Why not `create_pandas_dataframe_agent`?
+
+While LangChain provides a built-in `create_pandas_dataframe_agent`, we explicitly chose a custom LangGraph implementation for several critical reasons:
+
+- **Security (No Arbitrary Code):** The built-in agent uses a Python REPL (`PythonAstREPLTool`) allowing the LLM to execute arbitrary code. In a production API, this is a massive vulnerability. Our approach strictly limits the LLM to predefined, safe `@tool` functions.
+- **Guardrail Architecture:** A monolithic ReAct agent bypasses our robust pipeline (Input Guard ➔ Research Agent ➔ Critique Agent ➔ Output Guard). Our custom graph allows us to intercept the reasoning process, critique hallucinations, and enforce strict boundary conditions.
+- **Model Compatibility:** The built-in agent relies on complex, hardcoded prompts heavily biased toward OpenAI. Our solution uses isolated Markdown prompts out-of-the-box (`src/agents/prompts/*.md`), ensuring high compatibility across various open-source and proprietary models via LiteLLM.
+- **Custom Error Handling UX:** Instead of dumping raw `KeyError` stack traces from a Python REPL into the prompt, our custom tools gracefully catch data issues and return helpful, human-readable `ToolError` messages (e.g., fuzzy-matched suggestions for typo'd properties).
+
 ### Settings: `pydantic-settings` + `lru_cache`
 
 All environment variables are declared as typed fields on a `Settings` class with Pydantic validation. `get_settings()` is wrapped in `@lru_cache` and a pre-cached `settings` singleton is exported for convenience — no scattered `os.getenv()` calls.
@@ -92,8 +101,6 @@ Prompts are stored as `.md` files and loaded at runtime via `loader.py`:
 - Prompt engineers can edit language without touching Python.
 - The `{property_list}` placeholder in `extractor.md` is filled at runtime.
 
-### Error handling
-
 | Scenario                   | How handled                                                                        |
 | -------------------------- | ---------------------------------------------------------------------------------- |
 | Property not in dataset    | Tool returns a `ToolError` containing a helpful fuzzy-matched suggestion           |
@@ -104,108 +111,22 @@ Prompts are stored as `.md` files and loaded at runtime via `loader.py`:
 
 ---
 
-## Project Structure
+## Multi-user & Session Management
 
-```
-src/
-├── api/
-│   ├── deps.py              # FastAPI dependencies (service singletons)
-│   ├── endpoints.py         # API route handlers
-│   ├── exceptions.py        # Global exception handlers
-│   └── schemas.py           # Pydantic request/response models
-├── agents/
-│   ├── nodes/               # One file per LangGraph node
-│   │   ├── critique_agent.py
-│   │   ├── input_guard.py
-│   │   ├── output_guard.py
-│   │   └── research_agent.py
-│   ├── prompts/             # Markdown system prompts
-│   ├── tools/               # Pandas-based LangChain tools
-│   ├── state.py             # AgentState TypedDict
-│   └── workflow.py          # StateGraph assembly
-├── services/
-│   ├── agent/               # Agent lifecycle management
-│   │   ├── exceptions.py
-│   │   └── service.py
-│   ├── llm/                 # LiteLLM wrapper (all LLM calls)
-│   │   ├── exceptions.py
-│   │   └── service.py
-│   └── portfolio/           # Data loading and calculations
-│       ├── asset_manager.py
-│       ├── exceptions.py
-│       ├── normalization.py
-│       └── service.py
-├── evaluation/            # TruLens and CI evaluation scripts
-│   ├── evaluation.py
-│   ├── feedbacks.py
-│   ├── ground_truth.py
-│   └── runner.py
-├── frontend/
-│   └── chat_ui.py           # Streamlit UI
-├── core/
-│   ├── config.py            # Pydantic Settings + lru_cache
-│   └── logging_config.py    # Loguru configuration
-└── main.py                  # FastAPI application entry point
-```
+To ensure data privacy and independent conversation contexts, we implemented dynamic `thread_id` management:
+
+- **Frontend (Streamlit):**
+  - Uses `st.session_state` to store a unique `uuid4` per browser session.
+  - Provides a **"New Chat"** button in the sidebar that clears the message history and rotates the session UUID.
+- **Backend (FastAPI):**
+  - The `/query` endpoint now accepts an optional `thread_id` in the `QueryRequest` body.
+  - This ID is passed directly to the LangGraph checkpointer, ensuring that conversation history is persisted correctly per user/session.
 
 ---
 
-## How to Run
+## Evaluation Strategy
 
-### Using Makefile (Easiest)
-
-```bash
-make install          # Install dependencies
-make run-api          # Start FastAPI backend
-make run-ui           # Start Streamlit UI
-make evaluate-trulens # Run TruLens evaluation
-make lint             # Run ruff linting
-make docker-up        # Start with Docker Compose
-```
-
-### Local Setup (Manual)
-
-1. **Install dependencies**:
-
-   ```bash
-   uv sync
-   ```
-
-2. **Configure environment**:
-
-   ```bash
-   cp .env.example .env
-   # Edit LLM_MODEL and the matching API key
-   ```
-
-3. **Start the API**:
-
-   ```bash
-   uv run python src/main.py
-   ```
-
-4. **Start the UI**:
-   ```bash
-   uv run streamlit run src/frontend/app.py
-   ```
-
-### Running with Docker
-
-```bash
-make docker-up    # Build and start all services
-make docker-down  # Stop and remove containers
-```
-
-- **Streamlit UI**: [http://localhost:8501](http://localhost:8501)
-- **FastAPI docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-
----
-
-## Evaluation
-
-TruLens LLM-graded evaluation is provided via `src/evaluation/trulens_eval.py`.
-
-It measures three feedback dimensions for each test query:
+We chose TruLens for LLM-graded evaluation to quantitatively measure the performance and safety of the ReAct agent. It runs against a golden dataset of test queries across three dimensions:
 
 | Metric                | Description                                    |
 | --------------------- | ---------------------------------------------- |
@@ -213,24 +134,4 @@ It measures three feedback dimensions for each test query:
 | **Groundedness**      | Is the answer supported by the retrieved data? |
 | **Context Relevance** | Is the context passed to the LLM on-topic?     |
 
-Results are saved to `tests/evaluation/trulens.sqlite` and `tests/evaluation/trulens_report.json`.
-
-```bash
-make evaluate-trulens
-# or with dashboard:
-uv run src/evaluation/evaluation.py --dashboard
-```
-
----
-
-## Sample Queries
-
-| Query                                               | Intent                                      |
-| --------------------------------------------------- | ------------------------------------------- |
-| "What is the P&L for Building A in 2024?"           | Returns correct property income statement   |
-| "Compare all properties by NOI"                     | Compares relative metrics successfully      |
-| "Which property had the highest OER in 2025?"       | Uses OER data and aggregation correctly     |
-| "Show the top expense drivers across the portfolio" | Retrieves overall portfolio expense drivers |
-| "How did NOI grow from 2024 to 2025?"               | Computes YoY changes internally via tools   |
-| "Tell me about 999 Fake Street"                     | Tool fails cleanly with fuzzy-match hint    |
-| "Book me a flight to New York"                      | Blocked immediately by `Input Guard`        |
+This triad ensures the agent not only answers the question but does so using _only_ the data retrieved from the predefined tools, effectively measuring our mitigation of hallucinations.

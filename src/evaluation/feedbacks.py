@@ -12,6 +12,19 @@ Provides three LLM-graded signals:
 
 from __future__ import annotations
 
+import sys
+from types import ModuleType
+
+# ---- LangChain 0.3 Migration Bridge ------------------------------------------
+try:
+    import langchain.schema  # noqa: F401
+except ImportError:
+    import langchain_core.outputs
+    schema = ModuleType("langchain.schema")
+    sys.modules["langchain.schema"] = schema
+    schema.Generation = langchain_core.outputs.Generation
+# ------------------------------------------------------------------------------
+
 from trulens.core import Feedback
 from trulens.providers.openai import OpenAI as TruOpenAI
 

@@ -73,7 +73,10 @@ class AgentService:
         config = {"configurable": {"thread_id": thread_id}}
         logger.info(f"AgentService: Running graph for thread {thread_id!r} | query={query!r}")
         try:
-            result = self.graph.invoke({"query": query}, config=config)
+            result = self.graph.invoke(
+                {"query": query, "revision_count": 0, "critique": None},
+                config=config,
+            )
             
             # Log high-level outcome without dumping massive state dicts
             blocked = result.get("blocked", False)

@@ -5,7 +5,8 @@ An AI-powered assistant for querying and analysing a real estate portfolio. Ask 
 ## Features
 
 - **Natural language queries** — P&L, OER, growth metrics, expense breakdowns, and property comparisons
-- **Multi-turn conversations** — session memory via LangGraph checkpointing
+- **Multi-user Support** — session-based thread IDs for independent conversation histories
+- **New Chat** — Clear session and reset conversation from the sidebar
 - **Provider-agnostic LLM** — swap between OpenAI, Anthropic, Ollama, or any LiteLLM-supported model with one env var
 - **REST API** — FastAPI backend with Swagger docs at `/docs`
 - **Chat UI** — Streamlit frontend for interactive exploration
@@ -27,6 +28,9 @@ make install
 # 2. Configure environment
 cp .env.example .env
 # Edit .env: set LLM_MODEL and the matching API key
+
+# 3. Data files
+# Ensure your .parquet files are located in the `data/` directory at the project root.
 ```
 
 ### Run

@@ -50,9 +50,16 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
     model_with_tools = llm.chat_model.bind_tools(tools_list)
 
     system_prompt = load_prompt("research_agent")
-    tool_log: list[dict[str, Any]] = []
-
-    # Build initial message list
+    
+    # Initialize from history
+    initial_messages: list[Any] = list(state.get("messages", []))
+    messages: list[Any] = list(initial_messages)
+    
+    # Ensure system message is at the start
+    if not messages or not isinstance(messages[0], SystemMessage):
+        messages.insert(0, SystemMessage(content=system_prompt))
+    
+    # Add user query if it's the start of the turn (revision_count == 0)
     user_content = query
     if critique:
         user_content = (
@@ -60,10 +67,8 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
             f"[Previous answer was rejected. Critique feedback:]\n{critique}"
         )
 
-    messages: list[Any] = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_content),
-    ]
+    messages.append(HumanMessage(content=user_content))
+    tool_log: list[dict[str, Any]] = []
 
     for iteration in range(_MAX_TOOL_ITERATIONS):
         logger.debug("Research agent iteration {}", iteration + 1)
@@ -85,9 +90,18 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
                 iteration + 1,
                 len(str(draft)),
             )
+            
+            # Return new messages for the add_messages reducer
+            # We skip the messages that were already in the state
+            # but we include EVERYTHING added during this node call.
+            # However, if we added a SystemMessage at the start, we should be careful.
+            # LangGraph state management usually handles this.
+            new_messages = messages[len(initial_messages):]
+            
             return {
                 "draft_answer": str(draft),
                 "tool_log": tool_log,
+                "messages": new_messages
             }
 
         # Execute each tool call
@@ -140,7 +154,9 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
             "Here is the raw result: " + str(tool_log[-1].get("result", ""))
         )
 
+    new_messages = messages[len(initial_messages):]
     return {
         "draft_answer": draft,
         "tool_log": tool_log,
+        "messages": new_messages
     }

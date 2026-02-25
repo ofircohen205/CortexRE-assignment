@@ -10,6 +10,9 @@ LangGraph directly, so the Streamlit process is a pure thin client.
 from __future__ import annotations
 
 import os
+import uuid
+
+import time
 
 import requests
 import streamlit as st
@@ -24,7 +27,7 @@ _QUERY_URL = f"{_API_BASE}/query"
 _TIMEOUT   = int(os.getenv("API_TIMEOUT_SECONDS", "60"))
 
 
-def _post_query(query: str) -> dict:
+def _post_query(query: str, thread_id: str | None = None) -> dict:
     """
     POST ``{"query": query}`` to the FastAPI backend and return the
     parsed JSON response dict.
@@ -37,7 +40,7 @@ def _post_query(query: str) -> dict:
     logger.info("Sending query to API | url={} query={!r}", _QUERY_URL, query)
     resp = requests.post(
         _QUERY_URL,
-        json={"query": query},
+        json={"query": query, "thread_id": thread_id},
         timeout=_TIMEOUT,
     )
     resp.raise_for_status()
@@ -50,59 +53,52 @@ def _post_query(query: str) -> dict:
     return data
 
 
+def _stream_text(text: str):
+    """Yield words from text with a small delay to simulate streaming."""
+    for word in text.split(" "):
+        yield word + " "
+        time.sleep(0.05)
+
+
 # ---------------------------------------------------------------------------
 # Streamlit component
 # ---------------------------------------------------------------------------
 
 def render_chat_tab():
-    """Render the Agent Chat tab.  No graph argument required."""
+    """Render the Agent Chat tab."""
+    
+    # --- Session State Initialization ---
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
+    
+    if "thread_id" not in st.session_state:
+        st.session_state["thread_id"] = str(uuid.uuid4())
+
     st.subheader("Asset Management Assistant")
     
+    # --- Custom CSS ---
     st.markdown("""
-    <style>
-    /* User messages: Right-aligned with blue bubble */
-    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
-        flex-direction: row-reverse;
-        text-align: right;
-    }
-    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background-color: #0b93f6;
-        color: white;
-        border-radius: 18px 18px 4px 18px;
-        padding: 10px 15px;
-        display: inline-block;
-        max-width: 85%;
-        margin-left: auto;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    /* Set markdown text color inside the user bubble to white */
-    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] p {
-        color: white;
-        margin-bottom: 0;
-    }
-
-    /* Assistant messages: Left-aligned with gray bubble */
-    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background-color: #f1f0f0;
-        color: black;
-        border-radius: 18px 18px 18px 4px;
-        padding: 10px 15px;
-        display: inline-block;
-        max-width: 85%;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] p {
-        color: black;
-        margin-bottom: 0;
-    }
-    
-    /* Ensure chat input stays properly at the bottom */
-    div[data-testid="stChatInput"] {
-        padding-bottom: 20px;
-    }
-    </style>
+        <style>
+        [data-testid="stSidebar"] {
+            background-color: #000000;
+        }
+        .stButton>button {
+            border-radius: 8px;
+        }
+        </style>
     """, unsafe_allow_html=True)
 
+    with st.sidebar:
+        st.title("Session")
+        
+        if st.sidebar.button("New Chat", use_container_width=True, type="primary"):
+            st.session_state["messages"] = []
+            st.session_state["thread_id"] = str(uuid.uuid4())
+            st.rerun()
+            
+        st.sidebar.divider()
+        st.sidebar.caption(f"ID: `{st.session_state['thread_id'][:8]}...`")
+    
     # Suggested queries
     with st.expander("Sample queries", expanded=False):
         examples = [
@@ -135,14 +131,14 @@ def render_chat_tab():
         return
 
     # ---------------------------------------------------------------------------
-    # Chat history
+    # Chat history and response container
     # ---------------------------------------------------------------------------
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = []
+    chat_container = st.container()
 
-    for msg in st.session_state["messages"]:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    with chat_container:
+        for msg in st.session_state["messages"]:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
     # ---------------------------------------------------------------------------
     # Input
@@ -152,59 +148,45 @@ def render_chat_tab():
     query = user_input or prefill
 
     if query:
+        # 1. User message
         st.session_state["messages"].append({"role": "user", "content": query})
-        with st.chat_message("user"):
-            st.markdown(query)
 
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                answer  = None
+        with chat_container:
+            with st.chat_message("user"):
+                st.markdown(query)
 
-                try:
-                    data     = _post_query(query)
-                    answer   = data.get("answer") or "I could not generate a response."
-
-                except requests.HTTPError as exc:
-                    status = exc.response.status_code if exc.response is not None else "?"
+        # 2. Assistant response
+        with chat_container:
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    answer = None
                     try:
-                        detail = exc.response.json().get("detail", str(exc))
-                    except Exception:
-                        detail = str(exc)
-                    logger.error(
-                        "HTTP {} error from backend | query={!r} detail={}",
-                        status, query, detail,
-                    )
-                    answer       = f"The backend returned an error (HTTP {status}): {detail}"
+                        data = _post_query(query, thread_id=st.session_state["thread_id"])
+                        answer = data.get("answer") or "I could not generate a response."
 
-                except requests.ConnectionError:
-                    logger.error(
-                        "Connection error – backend unreachable | url={}", _QUERY_URL
-                    )
-                    answer = (
-                        f"Could not reach the backend at **{_API_BASE}**. "
-                        "Is the FastAPI server running?"
-                    )
+                    except requests.HTTPError as exc:
+                        status = exc.response.status_code if exc.response is not None else "?"
+                        try:
+                            detail = exc.response.json().get("detail", str(exc))
+                        except Exception:
+                            detail = str(exc)
+                        logger.error("HTTP {} error from backend | query={!r} detail={}", status, query, detail)
+                        answer = f"The backend returned an error (HTTP {status}): {detail}"
 
-                except requests.Timeout:
-                    logger.error(
-                        "Request timed out after {}s | query={!r}", _TIMEOUT, query
-                    )
-                    answer = (
-                        f"The request timed out after {_TIMEOUT} seconds. "
-                        "The query may be too complex — try rephrasing it."
-                    )
+                    except requests.ConnectionError:
+                        logger.error("Connection error – backend unreachable | url={}", _QUERY_URL)
+                        answer = f"Could not reach the backend at **{_API_BASE}**. Is the FastAPI server running?"
 
-                except Exception as exc:
-                    logger.exception(
-                        "Unexpected error calling backend | query={!r}: {}", query, exc
-                    )
-                    answer = f"An unexpected error occurred: {exc}"
+                    except requests.Timeout:
+                        logger.error("Request timeout | query={!r}", query)
+                        answer = "The request timed out. Please try a simpler query."
 
-            # Sanitize LLM output: remove $ signs before rendering.
-            # Streamlit treats $...$ as LaTeX math mode, which garbles numbers
-            # (e.g. "$2,295,528" becomes spaced-out characters).
-            if answer:
-                answer = answer.replace("$", "\\$")
-            st.markdown(answer)
+                    except Exception as exc:
+                        logger.exception("Unexpected error | query={!r}: {}", query, exc)
+                        answer = f"An unexpected error occurred: {exc}"
+
+                if answer:
+                    answer = answer.replace("$", "\\$")
+                    st.write_stream(_stream_text(answer))
 
         st.session_state["messages"].append({"role": "assistant", "content": answer})

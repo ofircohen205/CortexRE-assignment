@@ -283,17 +283,28 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
                 f"Unknown metric '{metric}'. Valid options: {', '.join(valid)}."
             )
 
-        series = _am(df).get_growth_metrics(metric)
-        rows = [
-            {
+        results = _am(df).get_growth_metrics(metric)
+        rows = []
+        for prop, years_dict in results.items():
+            if not years_dict:
+                continue
+            
+            # The tool documentation focuses on 2024 -> 2025, but we'll take the latest available
+            # year pair to be robust across different datasets.
+            latest_label = sorted(years_dict.keys())[-1]
+            val = years_dict[latest_label]
+            
+            rows.append({
                 "property_name": prop,
                 "growth": val,
                 "growth_pct": f"{val * 100:+.1f}%",
-            }
-            for prop, val in series.items()
-        ]
+            })
+
+        # Sort from best to worst performer (descending growth)
+        rows.sort(key=lambda x: x["growth"], reverse=True)
+
         return {
-            "label": f"YoY growth by {metric} (2024 → 2025)",
+            "label": f"YoY growth by {metric} (2024 \u2192 2025)",
             "metric": metric,
             "rows": rows,
             "best_performer": rows[0]["property_name"] if rows else None,
@@ -377,6 +388,58 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         }
 
     # ------------------------------------------------------------------
+    # Tool 8 — Flexible Portfolio Query (Arbitrary groupings/filters)
+    # ------------------------------------------------------------------
+    @tool(parse_docstring=True)
+    def query_portfolio(
+        dimensions: list[str],
+        metrics: list[str] = ["profit"],
+        filters: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """Flexible query engine for custom portfolio analysis across any dimensions.
+
+        Use this tool as a fallback when the user asks a highly specific question
+        that is not covered by the other tools (e.g. "What is the total profit
+        by tenant?", "Show me expenses grouped by month for 2025", etc).
+
+        Available dimensions to group by:
+        "property_name", "date", "year", "month_val", "tenant_name", "ledger_type",
+        "ledger_category", "description_en"
+
+        Available metrics to sum:
+        "profit"
+
+        Args:
+            dimensions: A list of column names to group the data by.
+            metrics: A list of numerical columns to sum (defaults to ["profit"]).
+            filters: Optional list of dictionaries with "column" and "value" keys. E.g. [{"column": "year", "value": 2025}]
+
+        Returns:
+            A dict with a `rows` key containing a list of aggregated results.
+        """
+        # We validate filters to ensure they only contain schema-safe columns
+        if filters:
+            for f in filters:
+                col = f.get("column")
+                if col == "property_name":
+                    _validate_property(df, f.get("value", ""))
+
+        rows = _am(df).query_portfolio(dimensions, metrics, filters)
+        
+        # Keep results manageable for the LLM context window by truncating huge responses
+        if len(rows) > 50:
+            return {
+                "label": "Custom Query Result (Truncated)",
+                "rows": rows[:50],
+                "note": f"Result truncated. {len(rows)} total rows found, showing top 50.",
+            }
+
+        return {
+            "label": "Custom Query Result",
+            "rows": rows,
+        }
+
+    # ------------------------------------------------------------------
     # Return all tools as a list
     # ------------------------------------------------------------------
     return [
@@ -387,4 +450,5 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         get_growth_metrics,
         compare_properties,
         top_expense_drivers,
+        query_portfolio,
     ]

@@ -33,7 +33,9 @@ async def query_agent(
     try:
         # Invoke the agent service (handles graph traversal and checkpointer persistence)
         logger.debug("API: Dispatching query to AgentService")
-        result = agent_service.invoke(query, thread_id="api_user_session")
+        # Use dynamic thread ID from request if provided
+        thread_id = request.thread_id or "default_session"
+        result = agent_service.invoke(query, thread_id=thread_id)
         
         answer = result.get("final_answer") or "No answer could be generated."
         blocked = result.get("blocked", False)

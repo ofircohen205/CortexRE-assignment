@@ -31,7 +31,11 @@ def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # 1. Date standardization: "2025-M01" → 2025-01-01
     if "month" in df.columns:
-        df["date"] = pd.to_datetime(df["month"].str.replace("-M", "-"), format="%Y-%m")
+        df["date"] = pd.to_datetime(
+            df["month"].str.replace("-M", "-", regex=False),
+            format="%Y-%m",
+            errors="coerce",
+        )
 
     # 2. Quarter standardization: "2025-Q1" → 2025-01-01 (start of quarter)
     if "quarter" in df.columns:

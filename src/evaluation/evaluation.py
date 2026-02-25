@@ -26,8 +26,22 @@ import argparse
 import json
 import math
 import os
+import sys
 from pathlib import Path
+from types import ModuleType
 from typing import Any
+
+# ---- LangChain 0.3 Migration Bridge ------------------------------------------
+# TruLens 1.3.0 still relies on the legacy 'langchain.schema' namespace for
+# some providers. We monkey-patch it here to map to langchain_core.
+try:
+    import langchain.schema  # noqa: F401
+except ImportError:
+    import langchain_core.outputs
+    schema = ModuleType("langchain.schema")
+    sys.modules["langchain.schema"] = schema
+    schema.Generation = langchain_core.outputs.Generation
+# ------------------------------------------------------------------------------
 
 from loguru import logger
 
@@ -95,15 +109,41 @@ def run_evaluation(dashboard: bool = False, port: int = 8502) -> None:
     # ---- Evaluation loop -----------------------------------------------------
     logger.info("Starting evaluation over {} queries...", len(ground_truth))
     errors: list[dict] = []
+    query_results: list[dict] = []
+    record_ids: list[str] = []
+
     for i, case in enumerate(ground_truth, start=1):
         query = case["query"]
         logger.info("[{}/{}] {}", i, len(ground_truth), query)
         try:
             with tru_app as recording:  # noqa: F841
-                invoke_fn(query)
+                response = tru_app.app(query)
+                rec = recording.get()
+                record_ids.append(rec.record_id)
+                query_results.append({
+                    "query": query,
+                    "response": response,
+                    "record_id": rec.record_id,
+                    "expected": case.get("expected_values"),
+                    "expected_intent": case.get("expected_intent"),
+                })
         except Exception as exc:
             logger.exception("Failed on query {!r}: {}", query, exc)
             errors.append({"query": query, "error": str(exc)})
+
+    # ---- Wait for feedback ---------------------------------------------------
+    if record_ids:
+        logger.info("Waiting for feedback results to be computed (this may take a minute)...")
+        feedback_names = [f.name for f in feedbacks]
+        try:
+            session.wait_for_feedback_results(
+                record_ids=record_ids,
+                feedback_names=feedback_names,
+                timeout=120,
+            )
+        except Exception as exc:
+            logger.warning("Timed out or failed waiting for TruLens feedback: {}", exc)
+            logger.warning("The report will include partial scores if available.")
 
     # ---- Results -------------------------------------------------------------
     records, feedback_col_names = session.get_records_and_feedback(
@@ -125,6 +165,30 @@ def run_evaluation(dashboard: bool = False, port: int = 8502) -> None:
             print(f"  {col:<30} {mean_score:.3f}")
     print("=" * 60)
 
+    # ---- Enrich query results with feedback scores ---------------------------
+    logger.debug("Enriching {} results with feedback scores...", len(query_results))
+    if query_results:
+        logger.debug("First query result keys: {}", query_results[0].keys())
+    logger.debug("Records columns: {}", list(records.columns))
+
+    for res in query_results:
+        rid = res.get("record_id")
+        if not rid:
+            logger.warning("No record_id found for query: {}", res.get("query"))
+            continue
+
+        if "record_id" not in records.columns:
+            logger.error("'record_id' column missing from TruLens records dataframe!")
+            break
+
+        matching_rows = records[records["record_id"] == rid]
+        if not matching_rows.empty:
+            row = matching_rows.iloc[0]
+            res["feedback"] = {
+                col: float(row[col]) if not isinstance(row[col], (type(pd.NA), type(None))) and not (isinstance(row[col], float) and math.isnan(row[col])) else None
+                for col in feedback_col_names if col in row.index
+            }
+
     # ---- Save JSON report ----------------------------------------------------
     report_path = _ROOT / "tests" / "evaluation" / "trulens_report.json"
     with open(report_path, "w") as fh:
@@ -132,7 +196,8 @@ def run_evaluation(dashboard: bool = False, port: int = 8502) -> None:
             {
                 "total_cases": len(ground_truth),
                 "errors": len(errors),
-                "feedback_scores": summary,
+                "overall_feedback_scores": summary,
+                "query_results": query_results,
                 "error_details": errors,
             },
             fh,

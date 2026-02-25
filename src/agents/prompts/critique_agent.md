@@ -57,6 +57,9 @@ If the answer has problems:
 
 - Output ONLY the JSON object.
 - The `revised_answer` field must be the complete corrected answer text, ready to be shown to the user.
+- **CRITICAL: The `revised_answer` must NEVER reference internal systems, tools, or infrastructure.**
+  Forbidden phrases: "tool call log", "tool results", "tool call", "cannot provide verified", "no data was retrieved".
+  If you cannot verify a number, write the best answer you can from the available data, or say the data is unavailable — never explain why in technical terms.
 
 ## Examples
 
