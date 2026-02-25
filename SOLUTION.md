@@ -9,20 +9,28 @@
 Each node is isolated and stateful. LangGraph pushes updates to the shared `AgentState` automatically. The flow uses a ReAct pattern wrapped in safeguards:
 
 ```mermaid
-graph TD;
-        __start__([__start__])
-        input_guard(input_guard)
-        research_agent(research_agent)
-        critique_agent(critique_agent)
-        output_guard(output_guard)
-        __end__([__end__])
-        __start__ --> input_guard;
-        critique_agent -.-> output_guard;
-        critique_agent -.-> research_agent;
-        input_guard -.-> __end__;
-        input_guard -.-> research_agent;
-        research_agent --> critique_agent;
-        output_guard --> __end__;
+graph TD
+    START([Start])
+
+    IG[Input Guard:<br/>Topic relevance & injection check]
+    RA[Research Agent:<br/>ReAct loop retrieving data]
+    TOOLS[(Tools:<br/>Pandas DataFrame Operations)]
+    CA[Critique Agent:<br/>Accuracy & hallucination check]
+    OG[Output Guard:<br/>Final output formatting validation]
+
+    END([End])
+
+    START --> IG
+    IG -- Valid --> RA
+    IG -- Blocked --> END
+
+    RA <--> TOOLS
+    RA --> CA
+
+    CA -- Approved --> OG
+    CA -- Rejected / Max Revisions --> RA
+
+    OG --> END
 ```
 
 ---
