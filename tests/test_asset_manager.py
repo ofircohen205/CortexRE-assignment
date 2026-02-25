@@ -120,19 +120,9 @@ def test_compare_properties_excludes_overhead(sample_df):
     assert "Corporate/General" not in result.index
 
 
-def test_compare_properties_noi_ordering(sample_df):
+def test_compare_properties_noi_ordering(am):
     """Properties must be sorted descending by the requested metric."""
-    df_with_overhead = pd.concat([
-        sample_df,
-        pd.DataFrame([{
-            "property_name": "Corporate/General",
-            "year": 2024,
-            "ledger_type": "expenses",
-            "profit": -999.0,
-        }]),
-    ], ignore_index=True)
-    am_with_overhead = AssetManagerAssistant(df_with_overhead)
-    result = am_with_overhead.compare_properties("noi")
+    result = am.compare_properties("noi")
     values = list(result.values)
     assert values == sorted(values, reverse=True)
 
