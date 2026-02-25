@@ -1,0 +1,43 @@
+.PHONY: help install run-api run-ui docker-up docker-down clean test lint evaluate-trulens
+
+help:
+	@echo "Usage:"
+	@echo "  make install             Install dependencies using uv"
+	@echo "  make run-api             Run FastAPI backend locally"
+	@echo "  make run-ui              Run Streamlit UI locally"
+	@echo "  make docker-up           Start services using Docker Compose"
+	@echo "  make docker-down         Stop services using Docker Compose"
+	@echo "  make test                Run tests"
+	@echo "  make lint                Run ruff linting"
+	@echo "  make evaluate-trulens    Run TruLens LLM-graded evaluation"
+	@echo "  make clean               Clean up cache files"
+
+install:
+	uv sync
+
+run-api:
+	uv run python src/main.py
+
+run-ui:
+	uv run streamlit run src/frontend/app.py
+
+docker-up:
+	docker compose -p cortex-re up -d --build --force-recreate
+
+docker-down:
+	docker compose down --volumes --remove-orphans
+
+test:
+	uv run pytest tests/
+
+lint:
+	uv run ruff check src/
+
+evaluate-trulens:
+	uv run src/evaluation/evaluation.py
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	find . -type d -name ".ruff_cache" -exec rm -rf {} +
+	rm -rf .coverage htmlcov

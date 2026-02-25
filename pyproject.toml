@@ -1,0 +1,26 @@
+[project]
+name = "cortexre-assignment"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.132.0",
+    "fastparquet>=2025.12.0",
+    "ipykernel>=7.2.0",
+    "langchain-core>=0.3.0",
+    "langchain-litellm>=0.5.1",
+    "litellm>=1.0.0",
+    "langgraph>=1.0.9",
+    "matplotlib>=3.10.8",
+    "pandas>=2.2.3,<3.0.0",
+    "pyarrow>=23.0.1",
+    "pydantic-settings>=2.0.0",
+    "seaborn>=0.13.2",
+    "streamlit>=1.35.0",
+    "requests>=2.31.0",
+    "loguru>=0.7.0",
+    "trulens-core>=1.0.0",
+    "trulens-providers-openai>=1.0.0",
+    "ruff>=0.15.2",
+]
