@@ -139,7 +139,8 @@ class AssetManagerAssistant:
             KeyError: If *field* is not a recognised metric.
         """
         pivot = (
-            self.df.groupby(["property_name", "ledger_type"])["profit"]
+            self.df[self.df["property_name"] != OVERHEAD_PROPERTY]   # exclude Corporate/General overhead
+            .groupby(["property_name", "ledger_type"])["profit"]
             .sum()
             .unstack(fill_value=0)
         )
@@ -173,3 +174,54 @@ class AssetManagerAssistant:
         if property_name is not None:
             mask &= self.df["property_name"] == property_name
         return self.df[mask].groupby("ledger_category")["profit"].sum().sort_values()
+
+    def query_portfolio(
+        self,
+        dimensions: list[str],
+        metrics: list[str] = ["profit"],
+        filters: list[dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Flexible query engine for custom portfolio analysis.
+
+        Allows grouping by specific dimensions, applying basic equality filters,
+        and aggregating numerical metrics. This provides safe, dynamic querying
+        without executing arbitrary code.
+
+        Args:
+            dimensions: Columns to group by (e.g., ``["year"]``, ``["property_name", "ledger_type"]``).
+            metrics: Numerical columns to sum (default is ``["profit"]``).
+            filters: List of dictionaries to filter the data. Each dict should have
+                     ``column``, ``operator`` (currently only "==" is supported), and ``value``.
+
+        Returns:
+            A list of dictionaries representing the aggregated rows.
+        """
+        df_view = self.df
+
+        # Apply filters
+        if filters:
+            for f in filters:
+                col = f.get("column")
+                val = f.get("value")
+                if col in df_view.columns:
+                    df_view = df_view[df_view[col] == val]
+
+        # Ensure dimensions exist
+        valid_dims = [d for d in dimensions if d in df_view.columns]
+        valid_metrics = [m for m in metrics if m in df_view.columns]
+
+        if not valid_dims:
+            # If no dimensions, just sum the metrics for the whole view
+            if not valid_metrics:
+                return []
+            agg = df_view[valid_metrics].sum().to_dict()
+            return [agg]
+
+        if not valid_metrics:
+            return []
+
+        # Group and aggregate
+        grouped = df_view.groupby(valid_dims)[valid_metrics].sum().reset_index()
+
+        # Convert to list of dicts for JSON serialization
+        return grouped.to_dict(orient="records")
