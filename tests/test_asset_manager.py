@@ -161,6 +161,8 @@ def test_get_schema_info_structure(am: AssetManagerAssistant):
     assert "ledger_groups" in info
     assert "ledger_categories" in info
     assert "years" in info
+    assert "quarters" in info
+    assert "months" in info
 
 
 def test_get_schema_info_excludes_overhead(am: AssetManagerAssistant):
