@@ -132,20 +132,46 @@ def test_top_expense_drivers(sample_df: pd.DataFrame):
     # To test this better, we'll augment our sample df specifically for categories
     df = sample_df.copy()
     df["ledger_category"] = "General"
-    
+
     # Add a huge specific expense
     extra = pd.DataFrame([
         {"property_name": "Building A", "year": 2024, "ledger_type": "expenses", "ledger_category": "Taxes", "profit": -500.0}
     ])
     df = pd.concat([df, extra])
     am = AssetManagerAssistant(df)
-    
+
     # Top expenses portfolio-wide
     top_portfolio = am.top_expense_drivers()
     assert top_portfolio.index[0] == "Taxes"
     assert top_portfolio.iloc[0] == -500.0  # Most negative
-    
+
     # Top expenses Building B (which doesn't have the Taxes row)
     top_b = am.top_expense_drivers("Building B")
     assert top_b.index[0] == "General"
     assert top_b.iloc[0] == -90.0
+
+
+def test_get_schema_info_structure(am: AssetManagerAssistant):
+    """get_schema_info returns a dict with all required keys."""
+    info = am.get_schema_info()
+    assert "properties" in info
+    assert "tenants_by_property" in info
+    assert "all_tenants" in info
+    assert "ledger_types" in info
+    assert "ledger_groups" in info
+    assert "ledger_categories" in info
+    assert "years" in info
+
+
+def test_get_schema_info_excludes_overhead(am: AssetManagerAssistant):
+    """Corporate/General must not appear in the properties list."""
+    info = am.get_schema_info()
+    assert "Corporate/General" not in info["properties"]
+
+
+def test_get_schema_info_excludes_na_tenants(am: AssetManagerAssistant):
+    """N/A values must not appear in any tenant list."""
+    info = am.get_schema_info()
+    assert "N/A" not in info["all_tenants"]
+    for tenants in info["tenants_by_property"].values():
+        assert "N/A" not in tenants

@@ -10,11 +10,11 @@ def test_create_tools(sample_df):
     """Test that all tools are successfully instantiated and receive their docstrings."""
     tools = create_tools(sample_df)
     
-    # We added 8 tools into the list (list_properties, get_property_pl, query_portfolio, etc)
-    assert len(tools) == 8
-    
+    # We have 9 tools in the list (list_properties, get_property_pl, query_portfolio, get_schema_info, etc)
+    assert len(tools) == 9
+
     tool_names = [t.name for t in tools]
-    
+
     assert "list_properties_tool" in tool_names
     assert "get_property_pl" in tool_names
     assert "get_portfolio_summary" in tool_names
@@ -23,6 +23,7 @@ def test_create_tools(sample_df):
     assert "compare_properties" in tool_names
     assert "top_expense_drivers" in tool_names
     assert "query_portfolio" in tool_names
+    assert "get_schema_info" in tool_names
     
     # Check that docstrings were properly parsed for the LLM
     query_tool = next(t for t in tools if t.name == "query_portfolio")

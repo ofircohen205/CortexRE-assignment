@@ -440,6 +440,28 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         }
 
     # ------------------------------------------------------------------
+    # Tool 9 — Schema Info (dimension discovery)
+    # ------------------------------------------------------------------
+    @tool(parse_docstring=True)
+    def get_schema_info() -> dict[str, Any]:
+        """Return all valid dimension values available in the dataset.
+
+        Call this tool FIRST whenever you are unsure about:
+        - Which tenants exist (and which property they belong to)
+        - Which ledger groups or ledger categories are available
+        - Which years, quarters, or months are in the dataset
+
+        Use the returned values as exact filter values in ``query_portfolio``,
+        ``get_tenant_summary``, or ``top_expense_drivers``.
+
+        Returns:
+            A dict with keys ``properties``, ``tenants_by_property``,
+            ``all_tenants``, ``ledger_groups``, ``ledger_categories``,
+            ``years``, ``quarters``, and ``months``.
+        """
+        return _am(df).get_schema_info()
+
+    # ------------------------------------------------------------------
     # Return all tools as a list
     # ------------------------------------------------------------------
     return [
@@ -451,4 +473,5 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         compare_properties,
         top_expense_drivers,
         query_portfolio,
+        get_schema_info,
     ]

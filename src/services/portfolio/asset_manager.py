@@ -175,6 +175,35 @@ class AssetManagerAssistant:
             mask &= self.df["property_name"] == property_name
         return self.df[mask].groupby("ledger_category")["profit"].sum().sort_values()
 
+    def get_schema_info(self) -> dict[str, Any]:
+        """Return all valid dimension values the LLM can use in queries."""
+        props = sorted(
+            p for p in self.df["property_name"].dropna().unique()
+            if p != OVERHEAD_PROPERTY
+        )
+        tenants_by_property: dict[str, list[str]] = {}
+        for prop in props:
+            tenants = sorted(
+                t for t in self.df[self.df["property_name"] == prop]["tenant_name"].dropna().unique()
+                if t != "N/A"
+            ) if "tenant_name" in self.df.columns else []
+            if tenants:
+                tenants_by_property[prop] = tenants
+
+        return {
+            "properties": props,
+            "tenants_by_property": tenants_by_property,
+            "all_tenants": sorted(
+                t for t in self.df["tenant_name"].dropna().unique() if t != "N/A"
+            ) if "tenant_name" in self.df.columns else [],
+            "ledger_types": sorted(self.df["ledger_type"].dropna().unique().tolist()),
+            "ledger_groups": sorted(self.df["ledger_group"].dropna().unique().tolist()) if "ledger_group" in self.df.columns else [],
+            "ledger_categories": sorted(self.df["ledger_category"].dropna().unique().tolist()) if "ledger_category" in self.df.columns else [],
+            "years": sorted(self.df["year"].dropna().astype(int).unique().tolist()),
+            "quarters": sorted(self.df["quarter"].dropna().unique().tolist()) if "quarter" in self.df.columns else [],
+            "months": sorted(self.df["month"].dropna().unique().tolist()) if "month" in self.df.columns else [],
+        }
+
     def query_portfolio(
         self,
         dimensions: list[str],
