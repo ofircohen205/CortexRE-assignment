@@ -74,7 +74,7 @@ class AgentService:
         logger.info(f"AgentService: Running graph for thread {thread_id!r} | query={query!r}")
         try:
             result = self.graph.invoke(
-                {"query": query, "revision_count": 0, "critique": None},
+                {"query": query, "revision_count": 0, "critique": None, "steps": []},
                 config=config,
             )
             
