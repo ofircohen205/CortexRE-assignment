@@ -423,9 +423,9 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
             valid_categories = set(df["ledger_category"].dropna().unique()) if "ledger_category" in df.columns else set()
             for f in filters:
                 col = f.get("column")
-                val = str(f.get("value", ""))
+                val = f.get("value")
                 if col == "property_name":
-                    _validate_property(df, val)
+                    _validate_property(df, str(val) if val is not None else "")
                 elif col == "tenant_name" and val not in valid_tenants:
                     available = sorted(t for t in valid_tenants if t != "N/A")
                     raise ToolError(
