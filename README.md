@@ -4,7 +4,21 @@ An AI-powered assistant for querying and analysing a real estate portfolio. Ask 
 
 ## Features
 
-- **Natural language queries** — P&L, OER, growth metrics, expense breakdowns, and property comparisons.
+The agent answers natural-language questions about a real estate portfolio:
+
+| Capability                        | Description                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------ |
+| **Property P&L**                  | Revenue, expenses, and NOI for a specific property, optionally filtered by year      |
+| **Portfolio Summary**             | Aggregate financials (revenue, expenses, NOI) across all properties for a given year |
+| **Operating Expense Ratio (OER)** | Ratio of expenses to revenue for a property in a given year                          |
+| **Year-over-Year Growth**         | YoY growth rates for NOI, revenue, or expenses per property                          |
+| **Property Comparison / Ranking** | Rank all properties by a financial metric (e.g., best/worst NOI)                     |
+| **Top Expense Drivers**           | Largest expense categories across the portfolio or a specific property               |
+| **Tenant Revenue Summary**        | Revenue breakdown per tenant, optionally scoped to a property or tenant name         |
+| **Flexible Portfolio Query**      | Custom group-by queries with filters and metric aggregation                          |
+
+Additional capabilities:
+
 - **Provider-agnostic LLM** — swap between OpenAI, Anthropic, Ollama, or any LiteLLM-supported model with one env var.
 - **REST API** — FastAPI backend with Swagger docs at `/docs`.
 - **Chat UI** — Streamlit frontend for interactive exploration.
