@@ -72,6 +72,7 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
 
     messages.append(HumanMessage(content=user_content))
     tool_log: list[dict[str, Any]] = []
+    steps: list[dict] = list(state.get("steps", []))
 
     for iteration in range(_MAX_TOOL_ITERATIONS):
         logger.debug("Research agent iteration {}", iteration + 1)
@@ -104,7 +105,8 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
             return {
                 "draft_answer": str(draft),
                 "tool_log": tool_log,
-                "messages": new_messages
+                "messages": new_messages,
+                "steps": steps,
             }
 
         # Execute each tool call
@@ -135,6 +137,13 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
                 "result": tool_result,
             })
 
+            steps.append({
+                "node": "ResearchAgent",
+                "type": "tool",
+                "message": tool_name,
+                "data": {"args": tool_args, "result": tool_result},
+            })
+
             messages.append(
                 ToolMessage(
                     content=str(tool_result),
@@ -161,5 +170,6 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
     return {
         "draft_answer": draft,
         "tool_log": tool_log,
-        "messages": new_messages
+        "messages": new_messages,
+        "steps": steps,
     }
