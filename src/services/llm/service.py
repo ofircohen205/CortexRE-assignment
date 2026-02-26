@@ -217,8 +217,8 @@ class LLMService:
             draft_answer: The candidate answer from the research agent.
 
         Returns:
-            :class:`CritiqueResult` with ``approved``, ``issues``, and
-            ``revised_answer``.
+            :class:`CritiqueResult` with ``approved``, ``issues``,
+            ``revised_answer``, and ``formatting_only``.
         """
         system_prompt = load_prompt("critique_agent")
         user_content = (
@@ -245,7 +245,7 @@ class LLMService:
             raise
         except Exception as exc:
             logger.warning("Critique agent failed — defaulting to approve: {}", exc)
-            return CritiqueResult(approved=True, issues=[], revised_answer=None)
+            return CritiqueResult(approved=True, issues=[], revised_answer=None, formatting_only=False)
 
     # ------------------------------------------------------------------
     # Output Guard
