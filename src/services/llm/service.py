@@ -108,6 +108,7 @@ class CritiqueResult:
     approved: bool
     issues: list[str]
     revised_answer: str | None
+    formatting_only: bool = False
 
 
 @dataclass
@@ -238,6 +239,7 @@ class LLMService:
                 approved=approved,
                 issues=issues,
                 revised_answer=data.get("revised_answer"),
+                formatting_only=bool(data.get("formatting_only", False)),
             )
         except LLMUnavailableError:
             raise
