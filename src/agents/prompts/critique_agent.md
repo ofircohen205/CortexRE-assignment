@@ -10,7 +10,7 @@ Respond with exactly ONE valid JSON object and nothing else.
 If the answer is acceptable:
 
 ```json
-{ "approved": true, "issues": [], "revised_answer": null }
+{ "approved": true, "issues": [], "revised_answer": null, "formatting_only": false }
 ```
 
 If the answer has problems:
@@ -19,7 +19,8 @@ If the answer has problems:
 {
   "approved": false,
   "issues": ["<issue 1>", "<issue 2>"],
-  "revised_answer": "<corrected full answer>"
+  "revised_answer": "<corrected full answer>",
+  "formatting_only": false
 }
 ```
 
@@ -53,6 +54,7 @@ If the answer has problems:
 - If issues are minor (trivial wording) and all numbers are correct, approve.
 - If any number is wrong or any property name is hallucinated, reject with a corrected answer.
 - Your `revised_answer` must fix ALL issues, not just the first one.
+- Set `formatting_only: true` ONLY when every single issue is about number formatting or currency symbols (e.g. missing commas, wrong decimal places, currency symbol present). Set it to `false` whenever any issue involves an incorrect value, a missing piece of information, or a wrong property name.
 
 ## Important
 
@@ -74,7 +76,8 @@ Draft answer: The revenue for Building A is $500,000.00.
 {
   "approved": false,
   "issues": ["Contains currency symbol '$'."],
-  "revised_answer": "The revenue for Building A is 500,000.00."
+  "revised_answer": "The revenue for Building A is 500,000.00.",
+  "formatting_only": true
 }
 ```
 
@@ -85,7 +88,7 @@ Draft answer: The revenue for Building A is 500,000.00.
 **Output:**
 
 ```json
-{ "approved": true, "issues": [], "revised_answer": null }
+{ "approved": true, "issues": [], "revised_answer": null, "formatting_only": false }
 ```
 
 **Input:**
@@ -95,5 +98,5 @@ Draft answer: The total expenses for the portfolio in 2024 were 300,000.00.
 **Output:**
 
 ```json
-{ "approved": true, "issues": [], "revised_answer": null }
+{ "approved": true, "issues": [], "revised_answer": null, "formatting_only": false }
 ```
