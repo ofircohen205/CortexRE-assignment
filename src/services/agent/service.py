@@ -6,6 +6,7 @@ Manages the compiled LangGraph agent and conversational checkpointing.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from loguru import logger
@@ -83,10 +84,10 @@ class AgentService:
             revisions = result.get("revision_count", 0)
             answer_len = len(result.get("final_answer", ""))
             
-            logger.info(
-                f"AgentService: Graph execution finished | blocked={blocked} "
-                f"revisions={revisions} answer_length={answer_len}"
-            )
+            # Log internal steps for observability
+            if result.get("steps"):
+                logger.debug(f"AgentService: Intermediate steps for thread {thread_id!r}:\n{json.dumps(result['steps'], indent=2, default=str)}")
+
             return result
         except Exception as exc:
             logger.exception("AgentService: Error during agent invocation for thread {}", thread_id)

@@ -362,7 +362,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
     # Tool 7 — Top expense drivers
     # ------------------------------------------------------------------
     @tool(parse_docstring=True)
-    def top_expense_drivers(property_name: str | None = None) -> dict[str, Any]:
+    def top_expense_drivers(property_name: str | None = None, year: int | None = None) -> dict[str, Any]:
         """Identify the largest expense categories by total cost.
 
         Use this tool when the user asks what is driving costs up — either for
@@ -372,6 +372,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         Args:
             property_name (str | None): Optional property name to scope the analysis.
                            When omitted, the analysis covers the entire portfolio.
+            year (int | None): Optional year filter.  ``None`` aggregates all years.
 
         Returns:
             A dict with ``rows`` (each row has ``category``, ``total`` as a
@@ -385,7 +386,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         if property_name:
             _validate_property(df, property_name)
 
-        series = _am(df).top_expense_drivers(property_name)
+        series = _am(df).top_expense_drivers(property_name, year)
         rows = [
             {"category": cat, "total": val, "total_fmt": _fmt(val)}
             for cat, val in series.items()

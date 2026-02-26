@@ -42,8 +42,9 @@ from src.agents.tools.pandas_tools import create_tools
 from src.services.llm.service import LLMService
 from src.agents.nodes.input_guard import input_guard_node
 from src.agents.nodes.research_agent import research_agent_node
-from src.agents.nodes.critique_agent import critique_agent_node, MAX_REVISIONS
+from src.agents.nodes.critique_agent import critique_agent_node
 from src.agents.nodes.output_guard import output_guard_node
+from src.core.config import settings
 
 
 # ===========================================================================
@@ -65,7 +66,7 @@ def route_after_critique(state: AgentState) -> str:
     critique = state.get("critique")
     revision_count = state.get("revision_count", 0)
 
-    if critique and revision_count < MAX_REVISIONS:
+    if critique and revision_count < settings.MAX_REVISIONS:
         return "research_agent"
     return "output_guard"
 

@@ -51,6 +51,7 @@ async def query_agent(
             answer=answer,
             blocked=blocked,
             block_reason=block_reason,
+            intermediate_steps=result.get("steps", []),
         )
     except Exception as exc:
         elapsed_ms = (time.time() - start_time) * 1000

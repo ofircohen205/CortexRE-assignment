@@ -72,6 +72,12 @@ class AgentState(TypedDict, total=False):
     This is the only field the API / UI layer reads.
     """
 
+    steps: list[dict[str, Any]]
+    """
+    Ordered list of process steps for observability.
+    Each step: {"node": str, "type": str, "message": str, "data": dict | None}
+    """
+
     # ---- Internal context (injected by _inject_context, not persisted) ----
     _df: Any
     """The normalised portfolio DataFrame — injected at runtime, never stored."""

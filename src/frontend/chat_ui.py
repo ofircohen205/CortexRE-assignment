@@ -126,7 +126,6 @@ def render_chat_tab():
                     try:
                         data = _post_query(query, thread_id=st.session_state["thread_id"])
                         answer = data.get("answer") or "I could not generate a response."
-
                     except requests.HTTPError as exc:
                         status = exc.response.status_code if exc.response is not None else "?"
                         try:

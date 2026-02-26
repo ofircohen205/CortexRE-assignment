@@ -29,12 +29,19 @@ def input_guard_node(state: AgentState) -> dict[str, Any]:
     """
     query: str = state.get("query", "").strip()
     llm: LLMService = state["_llm"]
+    steps: list[dict[str, Any]] = list(state.get("steps", []))
 
     # ------------------------------------------------------------------
     # Fast-fail: mechanical checks (no LLM call)
     # ------------------------------------------------------------------
     if not query:
         logger.warning("InputGuard: Rejecting empty query before LLM check")
+        steps.append({
+            "node": "InputGuard",
+            "type": "warning",
+            "message": "Rejecting empty query",
+            "data": {"reason": "empty_query"}
+        })
         return {
             "blocked": True,
             "block_reason": "empty_query",
@@ -42,6 +49,7 @@ def input_guard_node(state: AgentState) -> dict[str, Any]:
                 "Your message appears to be empty. "
                 "Please enter a question about your real-estate portfolio."
             ),
+            "steps": steps,
         }
 
     # ------------------------------------------------------------------
@@ -55,6 +63,12 @@ def input_guard_node(state: AgentState) -> dict[str, Any]:
             result.reason,
             query[:100] + ("..." if len(query) > 100 else "")
         )
+        steps.append({
+            "node": "InputGuard",
+            "type": "warning",
+            "message": "Query blocked by LLM",
+            "data": {"reason": result.reason, "query_snippet": query[:100]}
+        })
         return {
             "blocked": True,
             "block_reason": result.reason,
@@ -63,7 +77,14 @@ def input_guard_node(state: AgentState) -> dict[str, Any]:
                 "Please ask something related to your portfolio, properties, "
                 "financials, or asset performance."
             ),
+            "steps": steps,
         }
 
     logger.debug("InputGuard: Query passed safety checks")
-    return {"blocked": False}
+    steps.append({
+        "node": "InputGuard",
+        "type": "info",
+        "message": "Query passed safety checks",
+        "data": {"allowed": True}
+    })
+    return {"blocked": False, "steps": steps}

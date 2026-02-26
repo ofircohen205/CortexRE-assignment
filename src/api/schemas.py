@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import BaseModel
 
 
@@ -23,6 +24,7 @@ class QueryResponse(BaseModel):
     answer: str
     blocked: bool = False
     block_reason: str | None = None
+    intermediate_steps: list[dict[str, Any]] = []
 
 
 class ErrorResponse(BaseModel):

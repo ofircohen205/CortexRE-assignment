@@ -157,13 +157,14 @@ class AssetManagerAssistant:
         return pivot[metric].sort_values(ascending=False)
 
     def top_expense_drivers(
-        self, property_name: str | None = None
+        self, property_name: str | None = None, year: int | None = None
     ) -> pd.Series:
         """Identify the largest expense categories by total cost.
 
         Args:
             property_name: Optional property to scope the analysis to.
                            When ``None``, the entire portfolio is analysed.
+            year: Optional fiscal year filter.  ``None`` aggregates all years.
 
         Returns:
             A ``pd.Series`` mapping ledger category → summed expense value
@@ -173,6 +174,8 @@ class AssetManagerAssistant:
         mask = self.df["ledger_type"] == "expenses"
         if property_name is not None:
             mask &= self.df["property_name"] == property_name
+        if year is not None:
+            mask &= self.df["year"].astype(int) == year
         return self.df[mask].groupby("ledger_category")["profit"].sum().sort_values()
 
     def get_tenant_summary(

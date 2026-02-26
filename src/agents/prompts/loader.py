@@ -12,10 +12,11 @@ Storing prompts as ``.md`` files separates content from code:
 
 Usage::
 
-    from src.agents.prompts.loader import load_prompt
+    >>> # Loads src/agents/prompts/input_guard.md
+    >>> prompt = load_prompt("input_guard")
 
-    system_prompt = load_prompt("intent")                        # intent.md
-    extractor_prompt = load_prompt("extractor", property_list=...)  # with template vars
+    system_prompt = load_prompt("input_guard")                        # input_guard.md
+    agent_prompt = load_prompt("research_agent", property_list=...)   # with template vars
 """
 
 from __future__ import annotations
@@ -32,12 +33,12 @@ def load_prompt(name: str, **kwargs: str) -> str:
     Parameters
     ----------
     name:
-        Filename stem of the prompt (without ``.md``), e.g. ``"intent"``,
-        ``"extractor"``, or ``"responder"``.
+        Filename stem of the prompt (without ``.md``), e.g. ``"input_guard"``,
+        ``"research_agent"``, or ``"critique_agent"``.
     **kwargs:
         Named placeholders to substitute in the template.  For example,
-        ``load_prompt("extractor", property_list="- Building A\\n- 123 Main St")``
-        replaces ``{property_list}`` in ``extractor.md``.
+        ``load_prompt("research_agent", property_list="- Building A\\n- 123 Main St")``
+        replaces ``{property_list}`` in ``research_agent.md``.
 
     Returns
     -------

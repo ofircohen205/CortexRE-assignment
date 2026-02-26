@@ -84,6 +84,12 @@ class Settings(BaseSettings):
         description="Maximum retrieval re-tries before the agent gives up.",
     )
 
+    MAX_REVISIONS: int = Field(
+        default=3,
+        ge=1,
+        description="Maximum number of research→critique revision cycles.",
+    )
+
     # ------------------------------------------------------------------
     # Data
     # ------------------------------------------------------------------
