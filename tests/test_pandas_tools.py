@@ -75,3 +75,25 @@ def test_get_tenant_summary_unknown_property_raises(sample_df):
     tools = {t.name: t for t in create_tools(sample_df)}
     with pytest.raises(ToolError):
         tools["get_tenant_summary"].invoke({"property_name": "Nonexistent Building"})
+
+
+def test_query_portfolio_invalid_tenant_raises(sample_df):
+    """query_portfolio raises ToolError for an unknown tenant_name filter."""
+    from src.agents.tools.pandas_tools import ToolError
+    tools = {t.name: t for t in create_tools(sample_df)}
+    with pytest.raises(ToolError):
+        tools["query_portfolio"].invoke({
+            "dimensions": ["property_name"],
+            "filters": [{"column": "tenant_name", "value": "Nonexistent Tenant"}],
+        })
+
+
+def test_query_portfolio_invalid_category_raises(sample_df):
+    """query_portfolio raises ToolError for an unknown ledger_category filter."""
+    from src.agents.tools.pandas_tools import ToolError
+    tools = {t.name: t for t in create_tools(sample_df)}
+    with pytest.raises(ToolError):
+        tools["query_portfolio"].invoke({
+            "dimensions": ["property_name"],
+            "filters": [{"column": "ledger_category", "value": "fake_category"}],
+        })

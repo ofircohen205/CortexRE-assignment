@@ -417,12 +417,28 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         Returns:
             A dict with a `rows` key containing a list of aggregated results.
         """
-        # We validate filters to ensure they only contain schema-safe columns
+        # Validate filters against known schema values
         if filters:
+            valid_tenants = set(df["tenant_name"].dropna().unique()) if "tenant_name" in df.columns else set()
+            valid_categories = set(df["ledger_category"].dropna().unique()) if "ledger_category" in df.columns else set()
             for f in filters:
                 col = f.get("column")
+                val = str(f.get("value", ""))
                 if col == "property_name":
-                    _validate_property(df, f.get("value", ""))
+                    _validate_property(df, val)
+                elif col == "tenant_name" and val not in valid_tenants:
+                    available = sorted(t for t in valid_tenants if t != "N/A")
+                    raise ToolError(
+                        f"No tenant named '{val}' in the dataset. "
+                        f"Available tenants: {', '.join(available)}. "
+                        f"Call get_schema_info to see tenants per property."
+                    )
+                elif col == "ledger_category" and val not in valid_categories:
+                    raise ToolError(
+                        f"No ledger category '{val}' in the dataset. "
+                        f"Available categories: {', '.join(sorted(valid_categories))}. "
+                        f"Call get_schema_info for the full list."
+                    )
 
         rows = _am(df).query_portfolio(dimensions, metrics, filters)
         
