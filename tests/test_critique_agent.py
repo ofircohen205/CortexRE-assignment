@@ -116,3 +116,64 @@ def test_non_formatting_issue_loops_to_research():
     }
     result = critique_agent_node(state)
     assert result.get("critique") is not None, "factual issue must trigger research loop"
+
+
+def test_draft_history_appended_on_rejection():
+    """Each rejection must append the draft + score to draft_history."""
+    state = _make_state(revision_count=0)
+    result = critique_agent_node(state)
+    history = result.get("draft_history", [])
+    assert len(history) == 1
+    assert history[0]["draft"] == "The answer is 100,000.00."
+    assert history[0]["weighted_total"] == 50
+    assert "scores" in history[0]
+
+
+def test_best_answer_selected_from_history_at_cap():
+    """At revision cap, the draft with highest weighted_total wins."""
+    earlier_history = [
+        {"draft": "Old best answer.", "weighted_total": 75, "scores": {"accuracy": 8, "completeness": 8, "clarity": 7, "format": 5}},
+    ]
+    # The current draft scores lower (50) than the history entry (75)
+    state = _make_state(
+        revision_count=settings.MAX_REVISIONS - 1,
+        draft="Current worse answer.",
+        draft_history=earlier_history,
+    )
+    result = critique_agent_node(state)
+    assert result["draft_answer"] == "Old best answer.", "must pick the highest-scoring draft"
+    assert result["critique"] is None
+
+
+def test_best_answer_is_current_when_highest():
+    """If current draft has the highest score, it wins over history."""
+    earlier_history = [
+        {"draft": "Older worse answer.", "weighted_total": 30, "scores": {"accuracy": 3, "completeness": 3, "clarity": 3, "format": 3}},
+    ]
+    # Current draft scores 50 — higher than history entry (30)
+    state = _make_state(
+        revision_count=settings.MAX_REVISIONS - 1,
+        draft="Current better answer.",
+        draft_history=earlier_history,
+    )
+    result = critique_agent_node(state)
+    assert result["draft_answer"] == "Current better answer."
+
+
+def test_approved_draft_not_added_to_history():
+    """An approved draft should NOT be appended to draft_history."""
+    mock_llm = MagicMock()
+    mock_llm.critique_response.return_value = _high_score_result()
+    state = {
+        "query": "What is the revenue?",
+        "draft_answer": "The revenue is 500,000.00.",
+        "tool_log": [],
+        "revision_count": 0,
+        "draft_history": [],
+        "steps": [],
+        "_llm": mock_llm,
+    }
+    result = critique_agent_node(state)
+    assert result.get("critique") is None
+    # draft_history should not be set (or should remain empty)
+    assert result.get("draft_history", []) == []

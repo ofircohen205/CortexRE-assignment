@@ -42,6 +42,17 @@ from src.services.llm.exceptions import LLMInvocationError, LLMUnavailableError
 
 
 # ---------------------------------------------------------------------------
+# Score weights for the critique agent (accuracy×4, completeness×3, clarity×2, format×1)
+# ---------------------------------------------------------------------------
+
+_SCORE_WEIGHTS: dict[str, int] = {
+    "accuracy": 4,
+    "completeness": 3,
+    "clarity": 2,
+    "format": 1,
+}
+
+# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
@@ -238,11 +249,18 @@ class LLMService:
                 {"role": "user",   "content": user_content},
             ], response_format={"type": "json_object"})
             data = _parse_json(raw, "CritiqueAgent")
-            approved = bool(data.get("approved", True))
+            raw_scores: dict[str, Any] = data.get("scores", {})
+            scores = {k: int(raw_scores.get(k, 0)) for k in _SCORE_WEIGHTS}
+            weighted_total = sum(scores[k] * w for k, w in _SCORE_WEIGHTS.items())
             issues = data.get("issues", [])
-            logger.info(f"LLMService: Critique complete | approved={approved} issues_count={len(issues)}")
+            logger.info(
+                f"LLMService: Critique complete | weighted_total={weighted_total} "
+                f"approved={weighted_total >= settings.CRITIQUE_SCORE_THRESHOLD} "
+                f"issues_count={len(issues)}"
+            )
             return CritiqueResult(
-                approved=approved,
+                scores=scores,
+                weighted_total=weighted_total,
                 issues=issues,
                 revised_answer=data.get("revised_answer"),
                 formatting_only=bool(data.get("formatting_only", False)),
@@ -251,7 +269,13 @@ class LLMService:
             raise
         except Exception as exc:
             logger.warning("Critique agent failed — defaulting to approve: {}", exc)
-            return CritiqueResult(approved=True, issues=[], revised_answer=None, formatting_only=False)
+            return CritiqueResult(
+                scores={k: 10 for k in _SCORE_WEIGHTS},
+                weighted_total=100,
+                issues=[],
+                revised_answer=None,
+                formatting_only=False,
+            )
 
     # ------------------------------------------------------------------
     # Output Guard
