@@ -90,6 +90,13 @@ class Settings(BaseSettings):
         description="Maximum number of research→critique revision cycles.",
     )
 
+    CRITIQUE_SCORE_THRESHOLD: int = Field(
+        default=80,
+        ge=0,
+        le=100,
+        description="Minimum weighted score (0–100) for the critique agent to approve a draft.",
+    )
+
     # ------------------------------------------------------------------
     # Data
     # ------------------------------------------------------------------
