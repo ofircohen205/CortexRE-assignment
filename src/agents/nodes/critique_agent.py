@@ -90,7 +90,7 @@ def critique_agent_node(state: AgentState) -> dict[str, Any]:
         }
 
     # Formatting-only bypass: apply revised_answer directly, skip research loop
-    if result.formatting_only and result.revised_answer:
+    if not result.approved and result.formatting_only and result.revised_answer:
         logger.info(
             "CritiqueAgent: Formatting-only issues — applying revision directly (no research loop)"
         )
