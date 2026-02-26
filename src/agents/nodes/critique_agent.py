@@ -89,6 +89,24 @@ def critique_agent_node(state: AgentState) -> dict[str, Any]:
             "steps": steps,
         }
 
+    # Formatting-only bypass: apply revised_answer directly, skip research loop
+    if result.formatting_only and result.revised_answer:
+        logger.info(
+            "CritiqueAgent: Formatting-only issues — applying revision directly (no research loop)"
+        )
+        steps.append({
+            "node": "CritiqueAgent",
+            "type": "info",
+            "message": "Formatting-only issues — applying revision directly",
+            "data": {"issues": result.issues},
+        })
+        return {
+            "draft_answer": result.revised_answer,
+            "critique": None,
+            "revision_count": new_revision_count,
+            "steps": steps,
+        }
+
     # Loop back to research agent with critique feedback
     critique_text = (
         "The previous answer had these issues:\n"
