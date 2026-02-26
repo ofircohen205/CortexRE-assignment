@@ -49,6 +49,9 @@ def _litellm_completion(messages: list[dict[str, str]], *, model: str | None = N
     """
     Call LiteLLM with *messages* and return the response content string.
 
+    Retries up to 3 times on rate-limit or transient errors, respecting the
+    ``Retry-After`` header returned by the provider.
+
     Raises:
         LLMUnavailableError: If ``litellm`` is not installed.
         LLMInvocationError: For any error raised by LiteLLM at runtime.
@@ -65,6 +68,7 @@ def _litellm_completion(messages: list[dict[str, str]], *, model: str | None = N
             "model": model or settings.LLM_MODEL,
             "messages": messages,
             "temperature": settings.LLM_TEMPERATURE,
+            "num_retries": 3,
         }
         if response_format:
             kwargs["response_format"] = response_format

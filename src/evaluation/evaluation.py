@@ -22,6 +22,7 @@ Flags::
 
 from __future__ import annotations
 
+import pandas as pd
 import argparse
 import json
 import math
@@ -113,20 +114,24 @@ def run_evaluation(dashboard: bool = False, port: int = 8502) -> None:
     record_ids: list[str] = []
 
     for i, case in enumerate(ground_truth, start=1):
+        import time
+        if i > 1:
+            time.sleep(4)  # stay under the 30K TPM rate limit
+
         query = case["query"]
         logger.info("[{}/{}] {}", i, len(ground_truth), query)
         try:
-            with tru_app as recording:  # noqa: F841
+            with tru_app as recording:
                 response = tru_app.app(query)
-                rec = recording.get()
-                record_ids.append(rec.record_id)
-                query_results.append({
-                    "query": query,
-                    "response": response,
-                    "record_id": rec.record_id,
-                    "expected": case.get("expected_values"),
-                    "expected_intent": case.get("expected_intent"),
-                })
+            rec = recording.get()
+            record_ids.append(rec.record_id)
+            query_results.append({
+                "query": query,
+                "response": response,
+                "record_id": rec.record_id,
+                "expected": case.get("expected_values"),
+                "expected_intent": case.get("expected_intent"),
+            })
         except Exception as exc:
             logger.exception("Failed on query {!r}: {}", query, exc)
             errors.append({"query": query, "error": str(exc)})

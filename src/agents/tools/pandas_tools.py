@@ -152,9 +152,9 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         For portfolio-wide totals use ``get_portfolio_summary`` instead.
 
         Args:
-            property_name: Exact property name as it appears in the dataset.
+            property_name (str): Exact property name as it appears in the dataset.
                            Call ``list_properties`` first if unsure of the name.
-            year: Optional fiscal year (e.g. 2024 or 2025).  When omitted,
+            year (int | None): Optional fiscal year (e.g. 2024 or 2025).  When omitted,
                   all years are aggregated into a single figure.
 
         Returns:
@@ -195,7 +195,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         Corporate/General overhead entries are excluded automatically.
 
         Args:
-            year: Optional fiscal year filter.  When omitted, all years are
+            year (int | None): Optional fiscal year filter.  When omitted, all years are
                   aggregated.
 
         Returns:
@@ -230,8 +230,8 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         operating costs, which is generally unfavourable for asset performance.
 
         Args:
-            property_name: Exact property name as it appears in the dataset.
-            year: The fiscal year to calculate OER for (e.g. 2024 or 2025).
+            property_name (str): Exact property name as it appears in the dataset.
+            year (int): The fiscal year to calculate OER for (e.g. 2024 or 2025).
                   Both arguments are required for an accurate calculation.
 
         Returns:
@@ -266,7 +266,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         from best to worst performer.
 
         Args:
-            metric: The financial metric to measure growth on.
+            metric (str): The financial metric to measure growth on.
                     One of ``"noi"`` (default), ``"revenue"``, or ``"expenses"``.
 
         Returns:
@@ -323,19 +323,17 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         properties by expenses".
 
         Args:
-            field: The metric to rank by.  Typically one of ``"noi"``
+            field (str): The metric to rank by.  Typically one of ``"noi"``
                    (default), ``"revenue"``, or ``"expenses"``.
 
         Returns:
             A dict with ``rows`` (each row has ``property_name``, ``value``
             as a float, and ``value_fmt`` as a dollar string) and
-            ``top_property`` (name of the highest-ranked asset).
-
-            **Important for expenses:** expense values are negative numbers.
-            Rows are sorted descending, so ``rows[0]`` has the *least* negative
-            expense (lowest spending) and ``rows[-1]`` has the *most* negative
-            expense (highest spending). When the user asks which property has the
-            highest expenses, use ``rows[-1]``, not ``top_property``.
+            ``highest_property`` (the property that ranks highest for the given
+            field — for revenue/noi this is the largest positive value; for
+            expenses this is the property that spent the most, i.e. the most
+            negative value).  Always use ``highest_property`` to answer
+            "which property has the highest <field>?" questions.
         """
         series = _am(df).compare_properties(field)
         rows = [
@@ -346,11 +344,18 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
             }
             for prop, val in series.items()
         ]
+        # For expenses (negative numbers), "highest" means the most negative value
+        # which is the last row in a descending sort.  For revenue/noi the first
+        # row already holds the highest value.
+        if field == "expenses":
+            highest = rows[-1]["property_name"] if rows else None
+        else:
+            highest = rows[0]["property_name"] if rows else None
         return {
             "label": f"Property comparison by {field}",
             "field": field,
             "rows": rows,
-            "top_property": rows[0]["property_name"] if rows else None,
+            "highest_property": highest,
         }
 
     # ------------------------------------------------------------------
@@ -365,7 +370,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         from largest to smallest expense (most negative first).
 
         Args:
-            property_name: Optional property name to scope the analysis.
+            property_name (str | None): Optional property name to scope the analysis.
                            When omitted, the analysis covers the entire portfolio.
 
         Returns:
@@ -416,9 +421,9 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         "profit"
 
         Args:
-            dimensions: A list of column names to group the data by.
-            metrics: A list of numerical columns to sum (defaults to ["profit"]).
-            filters: Optional list of dictionaries with "column" and "value" keys. E.g. [{"column": "year", "value": 2025}]
+            dimensions (list[str]): A list of column names to group the data by.
+            metrics (list[str]): A list of numerical columns to sum (defaults to ["profit"]).
+            filters (list[dict[str, Any]] | None): Optional list of dictionaries with "column" and "value" keys. E.g. [{"column": "year", "value": 2025}]
 
         Returns:
             A dict with a `rows` key containing a list of aggregated results.
@@ -499,10 +504,10 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         - "Which tenant generates the most revenue?"
 
         Args:
-            property_name: Optional property to scope results to. When omitted,
+            property_name (str | None): Optional property to scope results to. When omitted,
                            returns tenants across all properties.
                            Call ``list_properties_tool`` first if unsure of the exact name.
-            tenant_name: Optional specific tenant to filter to. When omitted,
+            tenant_name (str | None): Optional specific tenant to filter to. When omitted,
                          all tenants are returned.
                          Call ``get_schema_info`` first if unsure of the exact tenant name.
                          If the name does not match any record, an empty result is returned.

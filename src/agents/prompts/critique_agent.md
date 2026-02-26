@@ -28,6 +28,7 @@ If the answer has problems:
 ### Factual accuracy (CRITICAL)
 
 - Every number in the draft must match the corresponding tool call result exactly.
+- **Expense sign convention:** expenses are stored as negative numbers in the tool results (e.g. `-300,000.00`). The draft should report expenses as **positive absolute values** (e.g. `300,000.00`). Do NOT flag an expense as wrong just because the draft omits the negative sign — only flag it if the absolute magnitude is incorrect.
 - Property names must match exactly (case-sensitive) as they appear in the tool results.
 - Percentages must be calculated correctly from the raw figures.
 
@@ -81,6 +82,16 @@ Draft answer: The revenue for Building A is $500,000.00.
 User question: What is the revenue for Building A?
 Tool call log: [{"tool_name": "get_property_pl", "args": {"property_name": "Building A"}, "result": {"revenue": 500000}}]
 Draft answer: The revenue for Building A is 500,000.00.
+**Output:**
+
+```json
+{ "approved": true, "issues": [], "revised_answer": null }
+```
+
+**Input:**
+User question: What are the total expenses for the portfolio in 2024?
+Tool call log: [{"tool_name": "get_portfolio_summary", "args": {"year": 2024}, "result": {"expenses": -300000, "expenses_fmt": "-300,000.00"}}]
+Draft answer: The total expenses for the portfolio in 2024 were 300,000.00.
 **Output:**
 
 ```json

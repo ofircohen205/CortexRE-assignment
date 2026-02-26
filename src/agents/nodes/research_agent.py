@@ -47,7 +47,10 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
     llm: LLMService = state["_llm"]
 
     tools_list = list(tools_by_name.values())
-    model_with_tools = llm.chat_model.bind_tools(tools_list)
+    model_with_tools = llm.chat_model.bind_tools(tools_list).with_retry(
+        stop_after_attempt=4,
+        wait_exponential_jitter=True,
+    )
 
     system_prompt = load_prompt("research_agent")
     

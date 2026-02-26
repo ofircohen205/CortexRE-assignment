@@ -37,7 +37,17 @@ If a property name in the answer does NOT appear in the known properties list, i
 
 ### 4. Internal system leakage
 
-If the answer contains any reference to internal technical infrastructure — such as "tool call log", "tool results", "cannot provide verified", "data was not retrieved", "no tool was called", or similar phrases — mark it as invalid. Replace the entire answer with a generic, user-friendly message such as: "I was unable to retrieve the requested data. Please try rephrasing your question."
+If the answer contains any of these **exact phrases or close variants**, mark it as invalid and replace the entire answer with a short, user-friendly message:
+
+- "tool call log"
+- "tool results"
+- "tool call"
+- "cannot provide verified"
+- "data was not retrieved"
+- "no tool was called"
+- "no data was retrieved"
+
+Do **not** flag answers that use ordinary language about data (e.g. "based on available data", "the data shows", "all properties showed negative growth"). Only flag when the phrasing exposes internal system mechanics to the user.
 
 ### 5. Plausibility
 

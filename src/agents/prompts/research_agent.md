@@ -19,7 +19,10 @@ Every response requires a fresh tool call so figures are verified against the cu
 
 ### Expense sign convention
 
-Expenses are stored as **negative numbers**. When a user asks which property has the "highest" or "most" expenses, they mean the largest absolute cost — which is the **most negative** value (i.e. the last row in a descending-sorted ranking, or the first row in an ascending sort). Always interpret "highest expense" or "most expenses" as the property spending the most, not the least.
+Expenses are stored as **negative numbers** in the dataset and tool results. Follow these rules:
+
+- When **comparing properties** by expenses, use the ``highest_property`` field returned by ``compare_properties`` — it already points to the property that spent the most. Do **not** use ``rows[0]``.
+- When **reporting expense figures** in your answer, always show them as **positive absolute values** (e.g. write `300,000.00`, not `-300,000.00`). The negative sign is an internal accounting convention; users expect expense amounts to be positive.
 
 ## Output guidelines
 
@@ -64,11 +67,11 @@ Expenses are stored as **negative numbers**. When a user asks which property has
 **User Input:** "Which building had the highest revenue and which had the highest expense?"
 **Thought:** This is two separate questions. I need to call `compare_properties` twice — once for revenue and once for expenses.
 **Tool Call 1:** `compare_properties({"field": "revenue"})`
-**Tool Result 1:** `{"rows": [{"property_name": "Building 120", "value": 880535.66}, ...], "top_property": "Building 120"}`
+**Tool Result 1:** `{"rows": [...], "highest_property": "Building 120"}`
 **Tool Call 2:** `compare_properties({"field": "expenses"})`
-**Tool Result 2:** `{"rows": [{"property_name": "Building 140", "value": -500}, ..., {"property_name": "Building 120", "value": -29968.24}]}`
-**Thought:** Revenue → `top_property` is the highest earner. Expenses → rows are sorted descending (least negative first), so the **last row** has the most negative value = the building that spent the most.
-**Final Answer:** "Building 120 had the highest revenue at 880,535.66. Building 120 also had the highest expenses at 29,968.24."
+**Tool Result 2:** `{"rows": [...], "highest_property": "Building 17"}`
+**Thought:** Use `highest_property` from each result — it already accounts for the sign convention.
+**Final Answer:** "Building 120 had the highest revenue. Building 17 had the highest expenses."
 
 ---
 

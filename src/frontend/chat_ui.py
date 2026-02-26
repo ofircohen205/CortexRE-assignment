@@ -75,43 +75,6 @@ def render_chat_tab():
         st.session_state["thread_id"] = str(uuid.uuid4())
 
     st.subheader("Asset Management Assistant")
-    
-    # --- Custom CSS ---
-    st.markdown("""
-        <style>
-        [data-testid="stSidebar"] {
-            background-color: #000000;
-        }
-        .stButton>button {
-            border-radius: 8px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    with st.sidebar:
-        st.title("Session")
-        
-        if st.sidebar.button("New Chat", use_container_width=True, type="primary"):
-            st.session_state["messages"] = []
-            st.session_state["thread_id"] = str(uuid.uuid4())
-            st.rerun()
-            
-        st.sidebar.divider()
-        st.sidebar.caption(f"ID: `{st.session_state['thread_id'][:8]}...`")
-    
-    # Suggested queries
-    with st.expander("Sample queries", expanded=False):
-        examples = [
-            "What is the P&L for all properties in 2024?",
-            "Compare all properties by NOI",
-            "Which property had the highest OER in 2025?",
-            "Show the top expense drivers across the portfolio",
-            "How did NOI grow from 2024 to 2025?",
-        ]
-        cols = st.columns(2)
-        for i, ex in enumerate(examples):
-            if cols[i % 2].button(ex, key=f"btn_{i}"):
-                st.session_state["prefill"] = ex
 
     # ---------------------------------------------------------------------------
     # API connectivity banner

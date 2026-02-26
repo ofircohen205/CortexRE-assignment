@@ -18,9 +18,6 @@ from loguru import logger
 from src.agents.state import AgentState
 from src.services.llm.service import LLMService
 
-# Absolute character limit — no LLM call needed above this
-_MAX_QUERY_LENGTH = 500
-
 
 def input_guard_node(state: AgentState) -> dict[str, Any]:
     """
@@ -44,17 +41,6 @@ def input_guard_node(state: AgentState) -> dict[str, Any]:
             "final_answer": (
                 "Your message appears to be empty. "
                 "Please enter a question about your real-estate portfolio."
-            ),
-        }
-
-    if len(query) > _MAX_QUERY_LENGTH:
-        logger.warning("InputGuard: Rejecting query due to length ({} chars > {})", len(query), _MAX_QUERY_LENGTH)
-        return {
-            "blocked": True,
-            "block_reason": "query_too_long",
-            "final_answer": (
-                f"Your query is too long ({len(query)} characters). "
-                f"Please keep questions under {_MAX_QUERY_LENGTH} characters."
             ),
         }
 
