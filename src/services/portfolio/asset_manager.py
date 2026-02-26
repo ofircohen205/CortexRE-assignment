@@ -121,7 +121,7 @@ class AssetManagerAssistant:
 
         return results
 
-    def compare_properties(self, field: str = "noi") -> pd.Series:
+    def compare_properties(self, field: str = "noi", year: int | None = None) -> pd.Series:
         """Rank all properties from highest to lowest by a financial metric.
 
         ``field`` is a *derived* metric — revenue and expenses are stored as
@@ -130,6 +130,8 @@ class AssetManagerAssistant:
 
         Args:
             field: One of ``"noi"`` (default), ``"revenue"``, or ``"expenses"``.
+            year: Optional fiscal year (e.g. 2024 or 2025).  When omitted,
+                  all years are aggregated into a single figure.
 
         Returns:
             A ``pd.Series`` mapping property name → metric value, sorted
@@ -138,8 +140,12 @@ class AssetManagerAssistant:
         Raises:
             KeyError: If *field* is not a recognised metric.
         """
+        mask = self.df["property_name"] != OVERHEAD_PROPERTY
+        if year is not None:
+            mask &= self.df["year"].astype(int) == year
+
         pivot = (
-            self.df[self.df["property_name"] != OVERHEAD_PROPERTY]   # exclude Corporate/General overhead
+            self.df[mask]
             .groupby(["property_name", "ledger_type"])["profit"]
             .sum()
             .unstack(fill_value=0)
@@ -182,6 +188,7 @@ class AssetManagerAssistant:
         self,
         property_name: str | None = None,
         tenant_name: str | None = None,
+        year: int | None = None,
     ) -> list[dict[str, Any]]:
         """Return revenue per tenant, optionally scoped to a property or specific tenant."""
         if "tenant_name" not in self.df.columns:
@@ -191,6 +198,8 @@ class AssetManagerAssistant:
             mask &= self.df["property_name"] == property_name
         if tenant_name is not None:
             mask &= self.df["tenant_name"] == tenant_name
+        if year is not None:
+            mask &= self.df["year"].astype(int) == year
 
         subset = self.df[
             mask

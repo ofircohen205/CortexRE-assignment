@@ -315,7 +315,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
     # Tool 6 — Compare properties by metric
     # ------------------------------------------------------------------
     @tool(parse_docstring=True)
-    def compare_properties(field: str = "noi") -> dict[str, Any]:
+    def compare_properties(field: str = "noi", year: int | None = None) -> dict[str, Any]:
         """Rank all properties from highest to lowest by a selected financial metric.
 
         Use this tool when the user wants to compare or rank properties against
@@ -325,6 +325,8 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         Args:
             field (str): The metric to rank by.  Typically one of ``"noi"``
                    (default), ``"revenue"``, or ``"expenses"``.
+            year (int | None): Optional fiscal year (e.g. 2024 or 2025).  When omitted,
+                  all years are aggregated into a single figure.
 
         Returns:
             A dict with ``rows`` (each row has ``property_name``, ``value``
@@ -335,7 +337,10 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
             negative value).  Always use ``highest_property`` to answer
             "which property has the highest <field>?" questions.
         """
-        series = _am(df).compare_properties(field)
+        if year:
+            _validate_year(df, year)
+
+        series = _am(df).compare_properties(field, year)
         rows = [
             {
                 "property_name": prop,
@@ -496,6 +501,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
     def get_tenant_summary(
         property_name: str | None = None,
         tenant_name: str | None = None,
+        year: int | None = None,
     ) -> dict[str, Any]:
         """Return revenue per tenant, ranked from highest to lowest.
 
@@ -512,6 +518,8 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
                          all tenants are returned.
                          Call ``get_schema_info`` first if unsure of the exact tenant name.
                          If the name does not match any record, an empty result is returned.
+            year (int | None): Optional fiscal year (e.g. 2024 or 2025).  When omitted,
+                  all years are aggregated into a single figure.
 
         Returns:
             A dict with ``rows`` (each row has ``property_name``, ``tenant_name``,
@@ -523,8 +531,10 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         """
         if property_name:
             _validate_property(df, property_name)
+        if year:
+            _validate_year(df, year)
 
-        rows_raw = _am(df).get_tenant_summary(property_name, tenant_name)
+        rows_raw = _am(df).get_tenant_summary(property_name, tenant_name, year)
         rows = [
             {
                 "property_name": r["property_name"],
