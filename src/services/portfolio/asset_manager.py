@@ -175,6 +175,31 @@ class AssetManagerAssistant:
             mask &= self.df["property_name"] == property_name
         return self.df[mask].groupby("ledger_category")["profit"].sum().sort_values()
 
+    def get_tenant_summary(
+        self,
+        property_name: str | None = None,
+        tenant_name: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return revenue per tenant, optionally scoped to a property or specific tenant."""
+        mask = self.df["ledger_type"] == "revenue"
+        if property_name is not None:
+            mask &= self.df["property_name"] == property_name
+        if tenant_name is not None:
+            mask &= self.df["tenant_name"] == tenant_name
+
+        subset = self.df[
+            mask
+            & self.df["tenant_name"].notna()
+            & (self.df["tenant_name"] != "N/A")
+        ]
+        grouped = (
+            subset.groupby(["property_name", "tenant_name"])["profit"]
+            .sum()
+            .reset_index()
+            .sort_values("profit", ascending=False)
+        )
+        return grouped.rename(columns={"profit": "revenue"}).to_dict(orient="records")
+
     def get_schema_info(self) -> dict[str, Any]:
         """Return all valid dimension values the LLM can use in queries."""
         props = sorted(

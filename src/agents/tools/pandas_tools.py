@@ -462,6 +462,57 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         return _am(df).get_schema_info()
 
     # ------------------------------------------------------------------
+    # Tool 10 — Tenant Revenue Summary
+    # ------------------------------------------------------------------
+    @tool(parse_docstring=True)
+    def get_tenant_summary(
+        property_name: str | None = None,
+        tenant_name: str | None = None,
+    ) -> dict[str, Any]:
+        """Return revenue per tenant, ranked from highest to lowest.
+
+        Use this tool when the user asks:
+        - "Who are my tenants?" or "Which tenants are in Building X?"
+        - "What does Tenant Y pay in rent?"
+        - "Which tenant generates the most revenue?"
+
+        Args:
+            property_name: Optional property to scope results to. When omitted,
+                           returns tenants across all properties.
+                           Call ``list_properties_tool`` first if unsure of the exact name.
+            tenant_name: Optional specific tenant to filter to. When omitted,
+                         all tenants are returned.
+                         Call ``get_schema_info`` first if unsure of the exact tenant name.
+
+        Returns:
+            A dict with ``rows`` (each row has ``property_name``, ``tenant_name``,
+            ``revenue`` as a float and ``revenue_fmt`` as a formatted string)
+            and ``top_tenant`` (name of the highest-revenue tenant).
+
+        Raises:
+            ToolError: If ``property_name`` is provided but does not exist in the dataset.
+        """
+        if property_name:
+            _validate_property(df, property_name)
+
+        rows_raw = _am(df).get_tenant_summary(property_name, tenant_name)
+        rows = [
+            {
+                "property_name": r["property_name"],
+                "tenant_name": r["tenant_name"],
+                "revenue": r["revenue"],
+                "revenue_fmt": _fmt(r["revenue"]),
+            }
+            for r in rows_raw
+        ]
+        scope = (f" — {property_name}" if property_name else "") + (f" — {tenant_name}" if tenant_name else "")
+        return {
+            "label": f"Tenant revenue summary{scope}",
+            "rows": rows,
+            "top_tenant": rows[0]["tenant_name"] if rows else None,
+        }
+
+    # ------------------------------------------------------------------
     # Return all tools as a list
     # ------------------------------------------------------------------
     return [
@@ -474,4 +525,5 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
         top_expense_drivers,
         query_portfolio,
         get_schema_info,
+        get_tenant_summary,
     ]
