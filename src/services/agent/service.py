@@ -75,14 +75,14 @@ class AgentService:
         logger.info(f"AgentService: Running graph for thread {thread_id!r} | query={query!r}")
         try:
             result = self.graph.invoke(
-                {"query": query, "revision_count": 0, "critique": None, "steps": []},
+                {"query": query, "revision_count": 0, "critique": None, "steps": [], "draft_history": []},
                 config=config,
             )
             
-            # Log high-level outcome without dumping massive state dicts
-            blocked = result.get("blocked", False)
-            revisions = result.get("revision_count", 0)
-            answer_len = len(result.get("final_answer", ""))
+            # # Log high-level outcome without dumping massive state dicts
+            # blocked = result.get("blocked", False)
+            # revisions = result.get("revision_count", 0)
+            # answer_len = len(result.get("final_answer", ""))
             
             # Log internal steps for observability
             if result.get("steps"):
