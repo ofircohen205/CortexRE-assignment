@@ -65,6 +65,13 @@ class AgentState(TypedDict, total=False):
     revision_count: int
     """Number of research→critique revision cycles completed (max = MAX_REVISIONS)."""
 
+    draft_history: list[dict[str, Any]]
+    """
+    History of every scored draft produced during revision cycles.
+    Each entry: {"draft": str, "weighted_total": int, "scores": dict[str, int]}
+    Used by the critique agent to select the best answer when the revision cap is reached.
+    """
+
     # ---- Output Guard outputs ----
     final_answer: str | None
     """
