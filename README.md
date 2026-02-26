@@ -26,7 +26,7 @@ graph TD
     IG[Input Guard:<br/>Topic relevance & injection check]
     RA[Research Agent:<br/>ReAct loop retrieving data]
     TOOLS[(Tools:<br/>Pandas DataFrame Operations)]
-    CA[Critique Agent:<br/>Accuracy & hallucination check]
+    CA[Critique Agent:<br/>Weighted scoring & best-answer selection]
     OG[Output Guard:<br/>Final output formatting validation]
 
     END([End])
@@ -55,12 +55,12 @@ While LangChain provides a built-in agent, we explicitly built a custom LangGrap
 
 ### Key Components
 
-| Node               | Responsibility                                                                               |
-| ------------------ | -------------------------------------------------------------------------------------------- |
-| **Input Guard**    | Rejects off-topic or injected queries before any tool call                                   |
-| **Research Agent** | React loop — calls pandas tools until it has enough data to draft an answer                  |
-| **Critique Agent** | Checks the draft for accuracy, hallucinations, and formatting; requests a revision if needed |
-| **Output Guard**   | Validates the final answer format and strips any internal reasoning leakage                  |
+| Node               | Responsibility                                                                                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Input Guard**    | Rejects off-topic or injected queries before any tool call                                                                                                  |
+| **Research Agent** | ReAct loop — calls pandas tools until it has enough data to draft an answer                                                                                 |
+| **Critique Agent** | Scores every draft on four weighted dimensions (accuracy ×4, completeness ×3, clarity ×2, format ×1); approves if ≥ 80/100, otherwise loops or selects best |
+| **Output Guard**   | Validates the final answer format and strips any internal reasoning leakage                                                                                 |
 
 #### Prompt Management
 
@@ -155,15 +155,25 @@ Our design process focused on moving beyond simple "Chat with Data" templates to
 - **Traceability**: Each node appends to a shared `steps` list, enabling the "Thinking Process" visualization.
 - **Node Isolation**: Different prompts and models can be used for different stages (e.g., a smaller model for guards, a larger one for research).
 
-### 2. Critique Balancing: Accuracy without Over-Rejection
+### 2. Critique Balancing: Weighted Scoring over Binary Approve/Reject
 
-**Challenge**: A naive critique agent often gets stuck in infinite loops, rejecting answers for trivial formatting issues (like missing commas) or perpetually asking for "more detail" that isn't in the dataset.
+**Challenge**: A naive critique agent makes a binary approve/reject decision. When the revision cap is reached it blindly accepts the critique's `revised_answer`, even if an earlier draft was actually better. Binary approval also gives the research agent no signal about _where_ to improve.
 
-**Solution**: We implemented a multi-tiered feedback loop:
+**Solution**: We replaced the boolean with a **four-dimension weighted scoring system**:
 
-- **Formatting-Only Bypass**: If the `Critique Agent` identifies only formatting issues, it applies its own `revised_answer` directly to the state and bypasses the research loop.
-- **Stateful Revision Cap**: We track `revision_count`. If the agent fails to satisfy the critique after `MAX_REVISIONS` (default 3), the system automatically accepts the "best available" answer to prevent deadlocks.
-- **Grounded Feedback**: The critique prompt forces the LLM to cite specific tool result mismatches, preventing vague or subjective rejections.
+| Dimension    | Weight | Max     |
+| ------------ | ------ | ------- |
+| Accuracy     | ×4     | 40      |
+| Completeness | ×3     | 30      |
+| Clarity      | ×2     | 20      |
+| Format       | ×1     | 10      |
+| **Total**    |        | **100** |
+
+- **Threshold-based approval**: `approved = weighted_total ≥ CRITIQUE_SCORE_THRESHOLD` (default `80`). The threshold is a configurable env var, not hard-coded logic.
+- **Per-dimension feedback**: When rejecting, the critique message includes each dimension score so the research agent knows exactly where to improve.
+- **Best-answer selection**: Every scored draft is appended to `draft_history`. At the revision cap, the draft with the **highest weighted total** is selected — not the last one produced.
+- **Formatting-only bypass**: If every issue is purely about number formatting or currency symbols, the critique applies its `revised_answer` directly without re-entering the research loop.
+- **Deterministic math**: Weighted totals are computed in Python code, not by the LLM, so scoring is always reproducible.
 
 ### 3. Tool Creation: Closures & Error UX
 
