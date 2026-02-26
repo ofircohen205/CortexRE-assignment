@@ -4,11 +4,9 @@ An AI-powered assistant for querying and analysing a real estate portfolio. Ask 
 
 ## Demo
 
-<!-- Option A — animated gif (universal, no audio)
 ![CortexRE demo](assets/demo.gif)
--->
 
-<video src="assets/demo.mp4" controls width="100%"></video>
+<!-- <video src="assets/demo.mp4" controls width="100%"></video> -->
 
 ---
 
