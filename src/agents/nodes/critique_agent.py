@@ -20,8 +20,7 @@ from loguru import logger
 
 from src.agents.state import AgentState
 from src.services.llm.service import LLMService
-
-MAX_REVISIONS = 2
+from src.core.config import settings
 
 
 def critique_agent_node(state: AgentState) -> dict[str, Any]:
@@ -38,37 +37,56 @@ def critique_agent_node(state: AgentState) -> dict[str, Any]:
     tool_log: list[dict] = state.get("tool_log", [])
     revision_count: int = state.get("revision_count", 0)
     llm: LLMService = state["_llm"]
+    steps: list[dict[str, Any]] = list(state.get("steps", []))
 
     if not draft_answer:
         logger.warning("Critique agent: no draft answer to review — passing through")
-        return {"critique": None}
+        steps.append({
+            "node": "CritiqueAgent",
+            "type": "warning",
+            "message": "No draft answer to review",
+        })
+        return {"critique": None, "steps": steps}
 
     result = llm.critique_response(query, tool_log, draft_answer)
 
     if result.approved:
         logger.info("CritiqueAgent: Draft approved by critique")
-        return {"critique": None}
+        steps.append({
+            "node": "CritiqueAgent",
+            "type": "info",
+            "message": "Draft approved",
+            "data": {"raw_response": str(result), "issues": []}
+        })
+        return {"critique": None, "steps": steps}
 
     logger.warning(
         "CritiqueAgent: Draft REJECTED | issues={} revision_count={}/{}",
         len(result.issues),
         revision_count + 1,
-        MAX_REVISIONS,
+        settings.MAX_REVISIONS,
     )
 
     new_revision_count = revision_count + 1
 
-    if new_revision_count >= MAX_REVISIONS:
+    if new_revision_count >= settings.MAX_REVISIONS:
         # Revision cap reached — accept the critique's corrected answer (or draft)
         accepted = result.revised_answer or draft_answer
         logger.warning(
             "CritiqueAgent: Revision cap ({}) reached — forcing acceptance of revised answer",
-            MAX_REVISIONS,
+            settings.MAX_REVISIONS,
         )
+        steps.append({
+            "node": "CritiqueAgent",
+            "type": "warning",
+            "message": f"Revision cap ({settings.MAX_REVISIONS}) reached — accepting best answer",
+            "data": {"issues": result.issues},
+        })
         return {
             "draft_answer": accepted,
             "critique": None,
             "revision_count": new_revision_count,
+            "steps": steps,
         }
 
     # Loop back to research agent with critique feedback
@@ -79,7 +97,18 @@ def critique_agent_node(state: AgentState) -> dict[str, Any]:
     if result.revised_answer:
         critique_text += f"\n\nSuggested correction: {result.revised_answer}"
 
+    steps.append({
+        "node": "CritiqueAgent",
+        "type": "warning",
+        "message": f"Draft REJECTED (Revision {new_revision_count})",
+        "data": {
+            "issues": result.issues,
+            "raw_response": str(result)
+        }
+    })
+
     return {
         "critique": critique_text,
         "revision_count": new_revision_count,
+        "steps": steps,
     }
