@@ -2,6 +2,16 @@
 
 An AI-powered assistant for querying and analysing a real estate portfolio. Ask questions in plain English; the agent retrieves the right numbers from the underlying dataset and responds with a clear, formatted summary.
 
+## Demo
+
+<!-- Option A — animated gif (universal, no audio)
+![CortexRE demo](assets/demo.gif)
+-->
+
+<video src="assets/demo.mp4" controls width="100%"></video>
+
+---
+
 ## Features
 
 The agent answers natural-language questions about a real estate portfolio:
