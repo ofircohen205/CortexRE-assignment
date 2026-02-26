@@ -72,7 +72,7 @@ def research_agent_node(state: AgentState) -> dict[str, Any]:
 
     messages.append(HumanMessage(content=user_content))
     tool_log: list[dict[str, Any]] = []
-    steps: list[dict] = list(state.get("steps", []))
+    steps: list[dict[str, Any]] = list(state.get("steps", []))
 
     for iteration in range(_MAX_TOOL_ITERATIONS):
         logger.debug("Research agent iteration {}", iteration + 1)
