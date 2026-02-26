@@ -105,10 +105,16 @@ class InputGuardResult:
 
 @dataclass
 class CritiqueResult:
-    approved: bool
+    scores: dict[str, int]
+    weighted_total: int
     issues: list[str]
     revised_answer: str | None
     formatting_only: bool = False
+
+    @property
+    def approved(self) -> bool:
+        from src.core.config import settings
+        return self.weighted_total >= settings.CRITIQUE_SCORE_THRESHOLD
 
 
 @dataclass
