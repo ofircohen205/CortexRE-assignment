@@ -181,6 +181,8 @@ class AssetManagerAssistant:
         tenant_name: str | None = None,
     ) -> list[dict[str, Any]]:
         """Return revenue per tenant, optionally scoped to a property or specific tenant."""
+        if "tenant_name" not in self.df.columns:
+            return []
         mask = self.df["ledger_type"] == "revenue"
         if property_name is not None:
             mask &= self.df["property_name"] == property_name

@@ -483,6 +483,7 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
             tenant_name: Optional specific tenant to filter to. When omitted,
                          all tenants are returned.
                          Call ``get_schema_info`` first if unsure of the exact tenant name.
+                         If the name does not match any record, an empty result is returned.
 
         Returns:
             A dict with ``rows`` (each row has ``property_name``, ``tenant_name``,
