@@ -330,6 +330,12 @@ def create_tools(df: pd.DataFrame) -> list[Any]:
             A dict with ``rows`` (each row has ``property_name``, ``value``
             as a float, and ``value_fmt`` as a dollar string) and
             ``top_property`` (name of the highest-ranked asset).
+
+            **Important for expenses:** expense values are negative numbers.
+            Rows are sorted descending, so ``rows[0]`` has the *least* negative
+            expense (lowest spending) and ``rows[-1]`` has the *most* negative
+            expense (highest spending). When the user asks which property has the
+            highest expenses, use ``rows[-1]``, not ``top_property``.
         """
         series = _am(df).compare_properties(field)
         rows = [
