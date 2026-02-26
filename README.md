@@ -117,10 +117,18 @@ The agent uses a ReAct reasoning loop fortified by multi-layer defence:
 # 1. Install dependencies
 make install
 
-# 2. Configure environment
+# 2. Add the dataset
+mkdir -p data
+cp /path/to/your/file.parquet data/
+# The app auto-discovers any *.parquet file inside data/
+
+# 3. Configure environment
 cp .env.example .env
 # Edit .env: set LLM_MODEL and the matching API key
 ```
+
+> [!IMPORTANT]
+> At least one `.parquet` file must exist inside the `data/` directory at the project root before starting the API or UI. The application will fail to start if the folder is empty or missing.
 
 ### Run
 
