@@ -7,17 +7,29 @@ used to produce it. You check for accuracy, completeness, and format compliance.
 
 Respond with exactly ONE valid JSON object and nothing else.
 
-If the answer is acceptable:
+Score each dimension from 0 (completely wrong) to 10 (perfect):
+
+- **accuracy** — do all numbers in the draft match the tool results exactly?
+- **completeness** — does the answer address every part of the user's question?
+- **clarity** — is the answer well-written, concise, and easy to understand?
+- **format** — are numbers correctly formatted (commas, two decimal places, no currency symbols)?
+
+If the answer is acceptable (high scores, no significant issues):
 
 ```json
-{ "approved": true, "issues": [], "revised_answer": null, "formatting_only": false }
+{
+  "scores": { "accuracy": 10, "completeness": 10, "clarity": 9, "format": 10 },
+  "issues": [],
+  "revised_answer": null,
+  "formatting_only": false
+}
 ```
 
 If the answer has problems:
 
 ```json
 {
-  "approved": false,
+  "scores": { "accuracy": 4, "completeness": 8, "clarity": 7, "format": 6 },
   "issues": ["<issue 1>", "<issue 2>"],
   "revised_answer": "<corrected full answer>",
   "formatting_only": false
@@ -51,7 +63,7 @@ If the answer has problems:
 
 ## Decision guidance
 
-- If issues are minor (trivial wording) and all numbers are correct, approve.
+- If issues are minor (trivial wording) and all numbers are correct, approve (give high scores ≥ 8 across dimensions).
 - If any number is wrong or any property name is hallucinated, reject with a corrected answer.
 - Your `revised_answer` must fix ALL issues, not just the first one.
 - Set `formatting_only: true` ONLY when every single issue is about number formatting or currency symbols (e.g. missing commas, wrong decimal places, currency symbol present). Set it to `false` whenever any issue involves an incorrect value, a missing piece of information, or a wrong property name.
@@ -74,7 +86,7 @@ Draft answer: The revenue for Building A is $500,000.00.
 
 ```json
 {
-  "approved": false,
+  "scores": { "accuracy": 10, "completeness": 10, "clarity": 9, "format": 6 },
   "issues": ["Contains currency symbol '$'."],
   "revised_answer": "The revenue for Building A is 500,000.00.",
   "formatting_only": true
@@ -88,7 +100,12 @@ Draft answer: The revenue for Building A is 500,000.00.
 **Output:**
 
 ```json
-{ "approved": true, "issues": [], "revised_answer": null, "formatting_only": false }
+{
+  "scores": { "accuracy": 10, "completeness": 10, "clarity": 10, "format": 10 },
+  "issues": [],
+  "revised_answer": null,
+  "formatting_only": false
+}
 ```
 
 **Input:**
@@ -98,5 +115,10 @@ Draft answer: The total expenses for the portfolio in 2024 were 300,000.00.
 **Output:**
 
 ```json
-{ "approved": true, "issues": [], "revised_answer": null, "formatting_only": false }
+{
+  "scores": { "accuracy": 10, "completeness": 10, "clarity": 10, "format": 10 },
+  "issues": [],
+  "revised_answer": null,
+  "formatting_only": false
+}
 ```
