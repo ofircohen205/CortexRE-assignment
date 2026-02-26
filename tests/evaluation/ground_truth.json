@@ -1,0 +1,203 @@
+[
+  {
+    "query": "What was the revenue and NOI for Building 120 in 2024?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 120"
+      ],
+      "year": 2024
+    },
+    "expected_values": {
+      "revenue": 703009.03,
+      "noi": 675640.0800000001
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 120 in 2025?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 120"
+      ],
+      "year": 2025
+    },
+    "expected_values": {
+      "revenue": 177526.63,
+      "noi": 174927.34
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 140 in 2024?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 140"
+      ],
+      "year": 2024
+    },
+    "expected_values": {
+      "revenue": 423497.44,
+      "noi": 412816.19
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 140 in 2025?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 140"
+      ],
+      "year": 2025
+    },
+    "expected_values": {
+      "revenue": 113842.66,
+      "noi": 113842.66
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 160 in 2024?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 160"
+      ],
+      "year": 2024
+    },
+    "expected_values": {
+      "revenue": 572780.38,
+      "noi": 565790.15
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 160 in 2025?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 160"
+      ],
+      "year": 2025
+    },
+    "expected_values": {
+      "revenue": 147274.98,
+      "noi": 147274.98
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 17 in 2024?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 17"
+      ],
+      "year": 2024
+    },
+    "expected_values": {
+      "revenue": 286053.41,
+      "noi": 280388.70999999996
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 17 in 2025?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 17"
+      ],
+      "year": 2025
+    },
+    "expected_values": {
+      "revenue": 72178.09999999999,
+      "noi": 72178.09999999999
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 180 in 2024?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 180"
+      ],
+      "year": 2024
+    },
+    "expected_values": {
+      "revenue": 310188.48,
+      "noi": 303598.25
+    }
+  },
+  {
+    "query": "What was the revenue and NOI for Building 180 in 2025?",
+    "expected_intent": "pl_analysis",
+    "expected_entities": {
+      "property_names": [
+        "Building 180"
+      ],
+      "year": 2025
+    },
+    "expected_values": {
+      "revenue": 81301.78,
+      "noi": 81301.78
+    }
+  },
+  {
+    "query": "Which property has the highest NOI?",
+    "expected_intent": "price_comparison",
+    "expected_entities": {
+      "metric": "noi"
+    },
+    "expected_values": {
+      "top_property": "Building 120"
+    }
+  },
+  {
+    "query": "Give me the portfolio total revenue for 2024",
+    "expected_intent": "portfolio_summary",
+    "expected_entities": {
+      "year": 2024
+    },
+    "expected_values": {
+      "revenue": 2295528.74
+    }
+  },
+  {
+    "query": "Who are the tenants in Building 120 and how much revenue do they generate?",
+    "expected_intent": "tenant_analysis",
+    "expected_entities": {
+      "property_names": ["Building 120"]
+    },
+    "expected_values": {
+      "top_tenant": "Tenant 7",
+      "top_tenant_revenue": 880535.66
+    }
+  },
+  {
+    "query": "Which tenant generates the most revenue across the entire portfolio?",
+    "expected_intent": "tenant_analysis",
+    "expected_entities": {},
+    "expected_values": {
+      "top_tenant": "Tenant 7",
+      "top_tenant_revenue": 880535.66
+    }
+  },
+  {
+    "query": "What are the top expense categories for Building 120?",
+    "expected_intent": "expense_analysis",
+    "expected_entities": {
+      "property_names": ["Building 120"]
+    },
+    "expected_values": {
+      "top_expense_category": "research_and_information",
+      "top_expense_amount": -23378.01
+    }
+  },
+  {
+    "query": "Break down the portfolio expenses by ledger group",
+    "expected_intent": "expense_analysis",
+    "expected_entities": {},
+    "expected_values": {
+      "general_expenses": -782154.21,
+      "management_fees": -471587.49,
+      "taxes_and_insurances": -100579.32
+    }
+  }
+]
