@@ -31,7 +31,7 @@ ENV PYTHONUNBUFFERED=1
 # Copy the application source code and data
 COPY src ./src
 COPY data ./data
-COPY SOLUTION.md .env.example ./
+COPY .env.example ./
 
 # Expose ports for FastAPI (8000) and Streamlit (8501)
 EXPOSE 8000
