@@ -8,7 +8,7 @@ An AI-powered assistant for querying and analysing a real estate portfolio. Ask 
 ![CortexRE demo](assets/demo.gif)
 -->
 
-<video src="[assets/demo.mp4](https://github.com/ofircohen205/CortexRE-assignment/blob/main/assets/demo.mp4)" controls width="100%"></video>
+<video src="https://github.com/ofircohen205/CortexRE-assignment/blob/main/assets/demo.mp4" controls width="100%"></video>
 
 ---
 
